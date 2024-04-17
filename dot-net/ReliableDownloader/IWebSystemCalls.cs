@@ -1,6 +1,6 @@
-namespace ReliableDownloader;
+﻿namespace ReliableDownloader;
 
-public interface IWebSystemCalls
+internal interface IWebSystemCalls
 {
     /// <summary>
     /// Makes an HTTP HEAD request to get the response headers for a URL.

@@ -1,6 +1,6 @@
-namespace ReliableDownloader;
+﻿namespace ReliableDownloader;
 
-public record FileProgress(
+internal record FileProgress(
     long? TotalFileSize,
     long TotalBytesDownloaded,
     double? ProgressPercent,
