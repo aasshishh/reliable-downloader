@@ -1,10 +1,6 @@
-﻿using System;
-using System.Threading;
-using System.Threading.Tasks;
+﻿namespace ReliableDownloader;
 
-namespace ReliableDownloader;
-
-public class FileDownloader : IFileDownloader
+internal sealed class FileDownloader : IFileDownloader
 {
     public Task<bool> TryDownloadFile(
         string contentFileUrl,

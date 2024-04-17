@@ -1,10 +1,6 @@
-﻿using System;
-using System.Threading;
-using System.Threading.Tasks;
+﻿namespace ReliableDownloader;
 
-namespace ReliableDownloader;
-
-public interface IFileDownloader
+internal interface IFileDownloader
 {
     /// <summary>Attempts to download a file and write it to the file system.</summary>
     /// <param name="contentFileUrl">The URL of the file to download.</param>

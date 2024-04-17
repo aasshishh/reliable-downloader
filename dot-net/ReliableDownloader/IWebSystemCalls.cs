@@ -1,10 +1,6 @@
-﻿using System.Net.Http;
-using System.Threading;
-using System.Threading.Tasks;
+﻿namespace ReliableDownloader;
 
-namespace ReliableDownloader;
-
-public interface IWebSystemCalls
+internal interface IWebSystemCalls
 {
     /// <summary>
     /// Makes an HTTP HEAD request to get the response headers for a URL.

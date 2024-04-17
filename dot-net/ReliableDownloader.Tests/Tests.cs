@@ -2,18 +2,16 @@
 
 namespace ReliableDownloader.Tests;
 
-[TestFixture]
+[FixtureLifeCycle(LifeCycle.InstancePerTestCase)]
 public class Tests
 {
-    [SetUp]
-    public void Setup()
-    {
-    }
-        
+    private readonly FileDownloader _sut = new();
+
     [Test]
-    public void Test1()
+    public async Task Test1()
     {
-        var fileDownloader = new FileDownloader();
-        Assert.True(true);
+        await _sut.TryDownloadFile("https://example.com/example.msi", "example.msi", _ => { }, default);
+
+        Assert.Inconclusive("TODO");
     }
 }

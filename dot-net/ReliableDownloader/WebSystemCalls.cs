@@ -1,11 +1,8 @@
-﻿using System.Net.Http;
-using System.Net.Http.Headers;
-using System.Threading;
-using System.Threading.Tasks;
+﻿using System.Net.Http.Headers;
 
 namespace ReliableDownloader;
 
-public class WebSystemCalls : IWebSystemCalls
+internal sealed class WebSystemCalls : IWebSystemCalls
 {
     private static readonly HttpClient _client = new();
 
