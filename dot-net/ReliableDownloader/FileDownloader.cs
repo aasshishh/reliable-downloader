@@ -2,11 +2,13 @@
 
 internal sealed class FileDownloader : IFileDownloader
 {
-    private readonly WebSystemCalls _webSystemCalls;
+    private readonly IWebSystemCalls _webSystemCalls;
+    private readonly ISystemCalls _systemCalls;
 
-    public FileDownloader(WebSystemCalls webSystemCalls)
+    public FileDownloader(IWebSystemCalls webSystemCalls, ISystemCalls systemCalls)
     {
         _webSystemCalls = webSystemCalls;
+        _systemCalls = systemCalls;
     }
 
     public async Task<bool> TryDownloadFile(
@@ -19,7 +21,7 @@ internal sealed class FileDownloader : IFileDownloader
         
         await using var responseStream = await response.Content.ReadAsStreamAsync(cancellationToken);
         
-        var destination = File.Open(localFilePath, FileMode.OpenOrCreate, FileAccess.ReadWrite);
+        var destination = _systemCalls.FileOpen(localFilePath, FileMode.OpenOrCreate, FileAccess.ReadWrite);
         
         await response.Content.CopyToAsync(destination, null, cancellationToken);
 

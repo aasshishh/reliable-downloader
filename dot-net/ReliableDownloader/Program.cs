@@ -16,7 +16,7 @@ if (args.Length > 2)
     cts.CancelAfter(TimeSpan.FromMilliseconds(int.Parse(args[2])));
 }
 
-var fileDownloader = new FileDownloader(new WebSystemCalls());
+var fileDownloader = new FileDownloader(new WebSystemCalls(), new SystemCalls());
 
 var didDownloadSuccessfully = await fileDownloader.TryDownloadFile(
     exampleUrl,
@@ -25,3 +25,11 @@ var didDownloadSuccessfully = await fileDownloader.TryDownloadFile(
     cts.Token);
 
 Console.WriteLine($"File download ended! Success: {didDownloadSuccessfully}");
+
+public class SystemCalls : ISystemCalls
+{
+    public Stream FileOpen(string localFilePath, FileMode openOrCreate, FileAccess readWrite)
+    {
+        return File.Open(localFilePath, openOrCreate, readWrite);
+    }
+}
