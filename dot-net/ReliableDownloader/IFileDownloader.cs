@@ -12,5 +12,5 @@ internal interface IFileDownloader
         string contentFileUrl,
         string localFilePath,
         Action<FileProgress> onProgressChanged,
-        CancellationToken cancellationToken);
+        CancellationToken cancellationToken = default);
 }

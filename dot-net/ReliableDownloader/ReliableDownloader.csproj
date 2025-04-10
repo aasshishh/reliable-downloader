@@ -10,6 +10,7 @@
   <ItemGroup>
     <InternalsVisibleTo Include="DynamicProxyGenAssembly2" />
     <InternalsVisibleTo Include="$(ProjectName).Tests" />
+    <InternalsVisibleTo Include="Accurx.$(ProjectName).Tests" />
   </ItemGroup>
   
 </Project>

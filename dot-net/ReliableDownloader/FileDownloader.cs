@@ -15,7 +15,7 @@ internal sealed class FileDownloader : IFileDownloader
         string contentFileUrl,
         string localFilePath,
         Action<FileProgress> onProgressChanged,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken = default)
     {
         var response = await _webSystemCalls.DownloadContentAsync(contentFileUrl, cancellationToken);
         
