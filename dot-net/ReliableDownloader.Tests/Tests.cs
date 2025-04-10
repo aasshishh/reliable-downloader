@@ -5,7 +5,7 @@ namespace ReliableDownloader.Tests;
 [FixtureLifeCycle(LifeCycle.InstancePerTestCase)]
 public class Tests
 {
-    private readonly FileDownloader _sut = new();
+    private readonly FileDownloader _sut = new(new WebSystemCalls());
 
     [Test]
     public async Task Test1()

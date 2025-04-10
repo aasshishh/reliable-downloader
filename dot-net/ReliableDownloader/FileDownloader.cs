@@ -15,21 +15,14 @@ internal sealed class FileDownloader : IFileDownloader
         Action<FileProgress> onProgressChanged,
         CancellationToken cancellationToken)
     {
-        var headers = await _webSystemCalls.GetHeadersAsync(contentFileUrl, cancellationToken);
-        headers.EnsureSuccessStatusCode();
-        var supportsPartial = headers.Headers.AcceptRanges.Contains("bytes");
-        var tmpFilePath = $"{headers.Content.Headers.LastModified:yyyyMMddTHHmmss}.download";
-        HttpResponseMessage response;
-        if (supportsPartial == false)
-        {
-            response = await _webSystemCalls.DownloadContentAsync(contentFileUrl, cancellationToken);
-            await using var responseStream = await response.Content.ReadAsStreamAsync(cancellationToken);
-            var destination = File.Open(tmpFilePath, FileMode.OpenOrCreate, FileAccess.ReadWrite);
-            await response.Content.CopyToAsync(destination, null, cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
+        var response = await _webSystemCalls.DownloadContentAsync(contentFileUrl, cancellationToken);
+        
+        await using var responseStream = await response.Content.ReadAsStreamAsync(cancellationToken);
+        
+        var destination = File.Open(localFilePath, FileMode.OpenOrCreate, FileAccess.ReadWrite);
+        
+        await response.Content.CopyToAsync(destination, null, cancellationToken);
 
-            return true;
-        }
-
-        throw new NotImplementedException();
+        return true;
     }
 }
