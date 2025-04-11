@@ -5,13 +5,24 @@ namespace Accurx.ReliableDownloader.Tests;
 [FixtureLifeCycle(LifeCycle.InstancePerTestCase)]
 public class FileDownloaderTests
 {
-    private readonly FileDownloader _sut = new(new HttpClient(new HttpClientHandler()));
-
     [Test]
-    public async Task Test1()
+    public async Task DownloadHappyPath()
     {
-        await _sut.DownloadAsync(new Uri("https://example.com/example.msi"), new MemoryStream());
-
-        Assert.Inconclusive("TODO");
+        // Arrange
+        const string expectedContent = "ExampleFileContent";
+        
+        var sut = new FileDownloader(new HttpClient(new MockHttpMessageHandler((_, _) =>
+            Task.FromResult(new HttpResponseMessage { Content = new StringContent(expectedContent) }))));
+        
+        // Act
+        var destination = new MemoryStream();
+        await sut.DownloadAsync(new Uri("https://example.com/example.msi"), destination);
+        
+        // Assert
+        destination.Position = 0;
+        using var reader = new StreamReader(destination);
+        var content = await reader.ReadToEndAsync();
+        
+        Assert.That(content, Is.EqualTo(expectedContent));
     }
 }
