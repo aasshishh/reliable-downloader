@@ -1,4 +1,9 @@
-﻿using ReliableDownloader;
+﻿namespace Accurx.ReliableDownloader;
+
+internal interface ISystemCalls
+{
+    Stream FileOpen(string localFilePath, FileMode openOrCreate, FileAccess readWrite);
+}
 
 internal sealed class SystemCalls : ISystemCalls
 {

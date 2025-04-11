@@ -1,11 +1,11 @@
 ﻿using NUnit.Framework;
 
-namespace ReliableDownloader.Tests;
+namespace Accurx.ReliableDownloader.Tests;
 
 [FixtureLifeCycle(LifeCycle.InstancePerTestCase)]
-public class Tests
+public class FileDownloaderTests
 {
-    private readonly FileDownloader _sut = new(new WebSystemCalls(new HttpClient(new HttpClientHandler())), new SystemCalls());
+    private readonly FileDownloader _sut = new(new HttpClient(new HttpClientHandler()), new SystemCalls());
 
     [Test]
     public async Task Test1()

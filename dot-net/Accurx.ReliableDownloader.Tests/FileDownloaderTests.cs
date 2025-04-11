@@ -1,9 +1,9 @@
-﻿namespace ReliableDownloader.Tests;
+﻿namespace Accurx.ReliableDownloader.Tests;
 
 [FixtureLifeCycle(LifeCycle.InstancePerTestCase)]
 public class Tests
 {
-    private readonly FileDownloader _sut = new(new WebSystemCalls(new HttpClient(new HttpClientHandler())), new SystemCalls());
+    private readonly FileDownloader _sut = new(new HttpClient(new HttpClientHandler()), new SystemCalls());
 
     // TODO: Names to be changed to be more descriptive.
     [Test]

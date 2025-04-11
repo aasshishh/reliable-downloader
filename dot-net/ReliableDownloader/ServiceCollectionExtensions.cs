@@ -1,7 +1,7 @@
 ﻿using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace ReliableDownloader;
+namespace Accurx.ReliableDownloader;
 
 internal static class ServiceCollectionExtensions
 {
@@ -11,9 +11,8 @@ internal static class ServiceCollectionExtensions
     {
         services
             .Configure<FileDownloadServiceSettings>(configuration.GetSection(FileDownloadServiceSettings.SectionName))
-            .AddHttpClient<IWebSystemCalls, WebSystemCalls>().Services
             .AddSingleton<ISystemCalls, SystemCalls>()
-            .AddSingleton<IFileDownloader, FileDownloader>()
+            .AddHttpClient<IFileDownloader, FileDownloader>().Services
             .AddHostedService<FileDownloadService>();
         return services;
     }

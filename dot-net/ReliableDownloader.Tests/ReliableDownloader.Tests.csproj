@@ -4,6 +4,8 @@
     <TargetFramework>net9.0</TargetFramework>
     <IsPackable>false</IsPackable>
     <ImplicitUsings>enable</ImplicitUsings>
+    <AssemblyName>Accurx.ReliableDownloader.Tests</AssemblyName>
+    <RootNamespace>Accurx.ReliableDownloader.Tests</RootNamespace>
   </PropertyGroup>
 
   <ItemGroup>

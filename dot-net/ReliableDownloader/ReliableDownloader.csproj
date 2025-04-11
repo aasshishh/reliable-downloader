@@ -5,6 +5,8 @@
     <IsPackable>false</IsPackable>
     <TargetFramework>net9.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
+    <AssemblyName>Accurx.ReliableDownloader</AssemblyName>
+    <RootNamespace>Accurx.ReliableDownloader</RootNamespace>
   </PropertyGroup>
 
   <ItemGroup>

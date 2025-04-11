@@ -1,5 +1,5 @@
+using Accurx.ReliableDownloader;
 using Microsoft.Extensions.Hosting;
-using ReliableDownloader;
 
 var builder = Host.CreateApplicationBuilder(args);
 builder.Services.AddFileDownloadService(builder.Configuration);
