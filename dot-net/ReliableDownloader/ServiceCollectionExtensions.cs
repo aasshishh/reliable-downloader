@@ -11,7 +11,6 @@ internal static class ServiceCollectionExtensions
     {
         services
             .Configure<FileDownloadServiceSettings>(configuration.GetSection(FileDownloadServiceSettings.SectionName))
-            .AddSingleton<ISystemCalls, SystemCalls>()
             .AddHttpClient<IFileDownloader, FileDownloader>().Services
             .AddHostedService<FileDownloadService>();
         return services;

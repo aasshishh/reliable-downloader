@@ -20,12 +20,14 @@ internal sealed class FileDownloadService(
 {
     public async Task StartAsync(CancellationToken cancellationToken)
     {
-        var didDownloadSuccessfully = await fileDownloader.TryDownloadFile(
-            downloadSettings.Value.SourceUrl,
-            Path.Combine(Directory.GetCurrentDirectory(), downloadSettings.Value.DestinationFilePath),
+        var destination = File.Open(downloadSettings.Value.DestinationFilePath, FileMode.OpenOrCreate,
+            FileAccess.ReadWrite);
+
+        await fileDownloader.DownloadAsync(
+            new Uri(downloadSettings.Value.SourceUrl), destination,
             cancellationToken);
 
-        logger.LogInformation("File download ended! Success: {DownloadSuccessful}", didDownloadSuccessfully);
+        logger.LogInformation("File download ended!");
     }
 
     public Task StopAsync(CancellationToken cancellationToken)
