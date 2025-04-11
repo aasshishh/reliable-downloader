@@ -20,7 +20,7 @@ internal sealed class FileDownloadService(
 {
     public async Task StartAsync(CancellationToken cancellationToken)
     {
-        var destination = File.Open(downloadSettings.Value.DestinationFilePath, FileMode.OpenOrCreate,
+        await using var destination = File.Open(downloadSettings.Value.DestinationFilePath, FileMode.OpenOrCreate,
             FileAccess.ReadWrite);
 
         await fileDownloader.DownloadAsync(
