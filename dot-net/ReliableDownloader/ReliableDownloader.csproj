@@ -7,6 +7,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <AssemblyName>Accurx.ReliableDownloader</AssemblyName>
     <RootNamespace>Accurx.ReliableDownloader</RootNamespace>
+    <Nullable>enable</Nullable>
   </PropertyGroup>
 
   <ItemGroup>

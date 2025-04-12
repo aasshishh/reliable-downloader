@@ -2,27 +2,55 @@
 
 internal interface IFileDownloader
 {
-    /// <summary>Attempts to download a file and write it to the file system.</summary>
-    /// <param name="source"></param>
-    /// <param name="destination"></param>
-    /// <param name="cancellationToken">A cancellation token to cancel the download.</param>
-    /// <returns>True if the download completes and writes to the file system successfully, otherwise false.</returns>
-    Task DownloadAsync(Uri source, Stream destination, CancellationToken cancellationToken = default);
-}
-
-/// <inheritdoc />
-internal sealed class FileDownloader(HttpClient httpClient) : IFileDownloader
-{
-    public async Task DownloadAsync(
+    Task<byte[]?> TryDownloadAsync(
         Uri source,
         Stream destination,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default
+    );
+}
+
+internal sealed class FileDownloader(HttpClient httpClient) : IFileDownloader
+{
+    public async Task<byte[]?> TryDownloadAsync(
+        Uri source,
+        Stream destination,
+        CancellationToken cancellationToken = default
+    )
     {
-        using var request = new HttpRequestMessage(HttpMethod.Get, source);
-        var response = await httpClient.SendAsync(request, cancellationToken);
+        var (contentMd5, acceptsByteRanges) = await ParseHeaders();
 
-        await using var responseStream = await response.Content.ReadAsStreamAsync(cancellationToken);
+        // TODO: Add partial content support based on acceptsByteRanges...
 
-        await response.Content.CopyToAsync(destination, null, cancellationToken);
+        await Download();
+
+        return contentMd5;
+
+        async Task<(byte[]? ContentMD5, bool AcceptsByteRanges)> ParseHeaders()
+        {
+            var headRequest = new HttpRequestMessage(HttpMethod.Head, source);
+            var headResponse = await httpClient.SendAsync(headRequest, cancellationToken);
+            headResponse.EnsureSuccessStatusCode();
+
+            return (
+                headResponse.Content.Headers.ContentMD5,
+                headResponse.Headers.AcceptRanges.Contains("bytes")
+            );
+        }
+
+        async Task Download()
+        {
+            using var getResponse = await httpClient.GetAsync(
+                source,
+                HttpCompletionOption.ResponseHeadersRead,
+                cancellationToken
+            );
+            getResponse.EnsureSuccessStatusCode();
+
+            await using var contentStream = await getResponse.Content.ReadAsStreamAsync(
+                cancellationToken
+            );
+
+            await contentStream.CopyToAsync(destination, cancellationToken);
+        }
     }
 }

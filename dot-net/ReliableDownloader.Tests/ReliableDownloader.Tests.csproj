@@ -6,6 +6,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <AssemblyName>Accurx.ReliableDownloader.Tests</AssemblyName>
     <RootNamespace>Accurx.ReliableDownloader.Tests</RootNamespace>
+    <Nullable>enable</Nullable>
   </PropertyGroup>
 
   <ItemGroup>
