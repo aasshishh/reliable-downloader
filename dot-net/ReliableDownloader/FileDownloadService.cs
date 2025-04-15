@@ -27,7 +27,7 @@ internal sealed class FileDownloadService(
             FileAccess.ReadWrite
         );
 
-        var contentMd5 = await fileDownloader.TryDownloadAsync(
+        var contentMd5 = await fileDownloader.DownloadAsync(
             new Uri(downloadSettings.Value.SourceUrl),
             destination,
             cancellationToken

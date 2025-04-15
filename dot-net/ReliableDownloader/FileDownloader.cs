@@ -2,7 +2,7 @@
 
 internal interface IFileDownloader
 {
-    Task<byte[]?> TryDownloadAsync(
+    Task<byte[]?> DownloadAsync(
         Uri source,
         Stream destination,
         CancellationToken cancellationToken = default
@@ -11,7 +11,7 @@ internal interface IFileDownloader
 
 internal sealed class FileDownloader(HttpClient httpClient) : IFileDownloader
 {
-    public async Task<byte[]?> TryDownloadAsync(
+    public async Task<byte[]?> DownloadAsync(
         Uri source,
         Stream destination,
         CancellationToken cancellationToken = default
@@ -20,6 +20,7 @@ internal sealed class FileDownloader(HttpClient httpClient) : IFileDownloader
         var (contentMd5, acceptsByteRanges) = await ParseHeaders();
 
         // TODO: Add partial content support based on acceptsByteRanges...
+        // TODO: Add resilience strategies...
 
         await Download();
 
