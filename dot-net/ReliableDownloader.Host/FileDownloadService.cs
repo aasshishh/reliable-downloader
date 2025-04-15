@@ -3,41 +3,45 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
-namespace Accurx.ReliableDownloader;
+namespace Accurx.ReliableDownloader.Host;
 
 internal record FileDownloadServiceSettings
 {
     public static string SectionName => "FileDownloadService";
 
-    public required string SourceUrl { get; init; }
+    public required Uri SourceUrl { get; init; }
     public required string DestinationFilePath { get; init; }
 }
 
 internal sealed class FileDownloadService(
     ILogger<FileDownloadService> logger,
     IOptions<FileDownloadServiceSettings> downloadSettings,
-    IFileDownloader fileDownloader
+    FileDownloader fileDownloader
 ) : IHostedService
 {
     public async Task StartAsync(CancellationToken cancellationToken)
     {
+        var settings = downloadSettings.Value;
+
+        logger.LogInformation(
+            "Starting download from {SourceUrl} to {DestinationFilePath}...",
+            settings.SourceUrl,
+            Path.Join(Directory.GetCurrentDirectory(), settings.DestinationFilePath)
+        );
+
         await using var destination = File.Open(
-            downloadSettings.Value.DestinationFilePath,
+            settings.DestinationFilePath,
             FileMode.OpenOrCreate,
             FileAccess.ReadWrite
         );
 
         var contentMd5 = await fileDownloader.DownloadAsync(
-            new Uri(downloadSettings.Value.SourceUrl),
+            settings.SourceUrl,
             destination,
             cancellationToken
         );
 
-        if (contentMd5 is null)
-        {
-            logger.LogWarning("File download was not validated");
-        }
-        else
+        if (contentMd5 is not null)
         {
             using var md5 = MD5.Create();
             destination.Position = 0;
@@ -46,18 +50,22 @@ internal sealed class FileDownloadService(
 
             if (computedMd5.SequenceEqual(contentMd5))
             {
-                logger.LogInformation("File download succeeded");
+                logger.LogInformation("MD5 hash is present, download integrity verified.");
             }
             else
             {
-                logger.LogError("File download failed!");
+                logger.LogError("Download failed!");
             }
+        }
+        else
+        {
+            logger.LogWarning("MD5 hash is not present, download integrity was not verified.");
         }
     }
 
     public Task StopAsync(CancellationToken cancellationToken)
     {
-        logger.LogInformation("FileDownloadService is stopping.");
+        logger.LogInformation("FileDownloadService is stopping...");
         return Task.CompletedTask;
     }
 }

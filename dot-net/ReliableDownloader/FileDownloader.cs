@@ -1,16 +1,11 @@
 ﻿namespace Accurx.ReliableDownloader;
 
-internal interface IFileDownloader
+public sealed class FileDownloader(HttpClient httpClient)
 {
-    Task<byte[]?> DownloadAsync(
-        Uri source,
-        Stream destination,
-        CancellationToken cancellationToken = default
-    );
-}
-
-internal sealed class FileDownloader(HttpClient httpClient) : IFileDownloader
-{
+    /// <summary>
+    /// Downloads a file from the specified URI to the provided stream.
+    /// </summary>
+    /// <returns>Returns MD5 integrity hash if present</returns>
     public async Task<byte[]?> DownloadAsync(
         Uri source,
         Stream destination,
@@ -20,7 +15,6 @@ internal sealed class FileDownloader(HttpClient httpClient) : IFileDownloader
         var (contentMd5, acceptsByteRanges) = await ParseHeaders();
 
         // TODO: Add partial content support based on acceptsByteRanges...
-        // TODO: Add resilience strategies...
 
         await Download();
 

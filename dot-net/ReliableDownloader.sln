@@ -4,6 +4,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ReliableDownloader", "Relia
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ReliableDownloader.Tests", "ReliableDownloader.Tests\ReliableDownloader.Tests.csproj", "{F1F405A4-D9E2-4920-ADD8-CEBCC3BAE810}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ReliableDownloader.Host", "ReliableDownloader.Host\ReliableDownloader.Host.csproj", "{0564586D-F29F-48EC-9A13-C6001DDF9A93}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -18,5 +20,9 @@ Global
 		{F1F405A4-D9E2-4920-ADD8-CEBCC3BAE810}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{F1F405A4-D9E2-4920-ADD8-CEBCC3BAE810}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{F1F405A4-D9E2-4920-ADD8-CEBCC3BAE810}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0564586D-F29F-48EC-9A13-C6001DDF9A93}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0564586D-F29F-48EC-9A13-C6001DDF9A93}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0564586D-F29F-48EC-9A13-C6001DDF9A93}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0564586D-F29F-48EC-9A13-C6001DDF9A93}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

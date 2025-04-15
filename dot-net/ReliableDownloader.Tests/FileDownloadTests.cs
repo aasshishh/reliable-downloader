@@ -1,47 +1,32 @@
-﻿namespace Accurx.ReliableDownloader.Tests;
+﻿using Accurx.ReliableDownloader.Tests.Helpers;
+
+namespace Accurx.ReliableDownloader.Tests;
 
 [FixtureLifeCycle(LifeCycle.InstancePerTestCase)]
-public class FileDownloadTests
+public sealed class FileDownloadTests
 {
+    private readonly FakeHttpMessageHandler _fakeHandler;
     private readonly FileDownloader _sut;
-
-    private HttpResponseMessage? _downloadResponse;
 
     public FileDownloadTests()
     {
-        _sut = new FileDownloader(
-            new HttpClient(
-                new MockHttpMessageHandler((_, _) => Task.FromResult(_downloadResponse!))
-            )
-        );
-    }
-
-    private static async Task<string> GetDownloadedContent(Stream destination)
-    {
-        destination.Position = 0;
-        using var reader = new StreamReader(destination);
-        return await reader.ReadToEndAsync();
-    }
-
-    private void SetupValidDownload(string content = "Default Content", byte[]? hash = null)
-    {
-        _downloadResponse = new HttpResponseMessage { Content = new StringContent(content) };
-        _downloadResponse.Content.Headers.ContentMD5 = hash;
+        _fakeHandler = new FakeHttpMessageHandler();
+        _sut = new FileDownloader(new HttpClient(_fakeHandler));
     }
 
     [Test]
     public async Task It_downloads_valid_content()
     {
         // Arrange
-        const string expectedContent = "Some Content";
-        SetupValidDownload(expectedContent);
+        _fakeHandler.SetupHead();
+        var expectedContent = _fakeHandler.SetupValidDownload();
 
         // Act
         var destination = new MemoryStream();
         await _sut.DownloadAsync(new Uri("https://example.com/example.msi"), destination);
 
         // Assert
-        var content = await GetDownloadedContent(destination);
+        var content = await destination.GetContentAsync();
 
         Assert.That(content, Is.EqualTo(expectedContent));
     }
@@ -51,7 +36,8 @@ public class FileDownloadTests
     {
         // Arrange
         byte[] expectedHash = [12, 34, 56, 78, 90];
-        SetupValidDownload(hash: expectedHash);
+        _fakeHandler.SetupHead(expectedHash);
+        _fakeHandler.SetupValidDownload();
 
         // Act
         var destination = new MemoryStream();
@@ -63,31 +49,5 @@ public class FileDownloadTests
 
         // Assert
         Assert.That(integrityHash, Is.EquivalentTo(expectedHash));
-    }
-
-    [Test]
-    public async Task It_retries_until_the_download_succeeds()
-    {
-        Assert.Inconclusive("TODO");
-    }
-
-    // TODO: Names to be changed to be more descriptive.
-
-    [Test]
-    public async Task It_happy_path_download_partial()
-    {
-        Assert.Inconclusive("TODO");
-    }
-
-    [Test]
-    public async Task It_sad_path_internet_disconnect_download_partial()
-    {
-        Assert.Inconclusive("TODO");
-    }
-
-    [Test]
-    public async Task It_sad_path_internet_disconnect_download_partial_picks_up_where_left_off()
-    {
-        Assert.Inconclusive("TODO");
     }
 }
