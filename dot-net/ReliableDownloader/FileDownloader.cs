@@ -15,6 +15,7 @@ public sealed class FileDownloader(HttpClient httpClient)
         var (contentMd5, acceptsByteRanges) = await ParseHeaders();
 
         // TODO: Add partial content support based on acceptsByteRanges...
+        // 3. How would you handle large files or slow network conditions?
 
         await Download();
 
