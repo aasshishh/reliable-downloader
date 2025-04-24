@@ -1,8 +1,5 @@
 ﻿namespace Accurx.ReliableDownloader.Tests.Helpers;
 
-/// <summary>
-/// Feel free to swap this fake out with a different approach.
-/// </summary>
 internal sealed class FakeHttpMessageHandler : HttpMessageHandler
 {
     private readonly Queue<Func<HttpRequestMessage, HttpResponseMessage>> _setups = new();
@@ -21,7 +18,9 @@ internal sealed class FakeHttpMessageHandler : HttpMessageHandler
             return Task.FromResult(response);
         }
 
-        throw new AssertionException($"Unexpected '{request.Method} {request.RequestUri}' request");
+        throw new AssertionException(
+            $"Unexpected '{request.Method} {request.RequestUri}' request, have you missed a setup?"
+        );
     }
 
     public void Enqueue(Func<HttpRequestMessage, HttpResponseMessage> response) =>
