@@ -9,7 +9,6 @@ builder
         builder.Configuration.GetSection(FileDownloadServiceSettings.SectionName)
     )
     .AddHttpClient<FileDownloader>()
-    .AddStandardResilienceHandler()
     .Services.AddHostedService<FileDownloadService>();
 
 using var host = builder.Build();
