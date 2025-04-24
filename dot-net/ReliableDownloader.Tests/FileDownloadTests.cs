@@ -1,4 +1,5 @@
 ﻿using Accurx.ReliableDownloader.Tests.Helpers;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Accurx.ReliableDownloader.Tests;
 
@@ -11,11 +12,11 @@ public sealed class FileDownloadTests
     public FileDownloadTests()
     {
         _fakeHandler = new FakeHttpMessageHandler();
-        _sut = new FileDownloader(new HttpClient(_fakeHandler));
+        _sut = new FileDownloader(new NullLogger<FileDownloader>(), new HttpClient(_fakeHandler));
     }
 
     [Test]
-    public async Task It_downloads_valid_content()
+    public async Task It_downloads_content_when_accept_ranges_is_not_supported()
     {
         // Arrange
         _fakeHandler.SetupHead();
@@ -49,5 +50,19 @@ public sealed class FileDownloadTests
 
         // Assert
         Assert.That(integrityHash, Is.EquivalentTo(expectedHash));
+    }
+
+    [Test]
+    public async Task It_downloads_content_in_chunks_when_accept_ranges_is_supported()
+    {
+        // Arrange
+        _fakeHandler.SetupHead(acceptRanges: "bytes");
+
+        // Act
+        var destination = new MemoryStream();
+        await _sut.DownloadAsync(new Uri("https://example.com/example.msi"), destination);
+
+        // Assert
+        Assert.Inconclusive("TODO");
     }
 }

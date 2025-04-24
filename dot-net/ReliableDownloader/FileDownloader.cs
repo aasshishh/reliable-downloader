@@ -1,6 +1,8 @@
-﻿namespace Accurx.ReliableDownloader;
+﻿using Microsoft.Extensions.Logging;
 
-public sealed class FileDownloader(HttpClient httpClient)
+namespace Accurx.ReliableDownloader;
+
+public sealed class FileDownloader(ILogger<FileDownloader> logger, HttpClient httpClient)
 {
     /// <summary>
     /// Downloads a file from the specified URI to the provided stream.
@@ -17,7 +19,7 @@ public sealed class FileDownloader(HttpClient httpClient)
         // TODO: Add partial content support based on acceptsByteRanges...
         // 3. How would you handle large files or slow network conditions?
 
-        await Download();
+        await DownloadFull();
 
         return contentMd5;
 
@@ -27,13 +29,26 @@ public sealed class FileDownloader(HttpClient httpClient)
             var headResponse = await httpClient.SendAsync(headRequest, cancellationToken);
             headResponse.EnsureSuccessStatusCode();
 
-            return (
-                headResponse.Content.Headers.ContentMD5,
-                headResponse.Headers.AcceptRanges.Contains("bytes")
+            var md5 = headResponse.Content.Headers.ContentMD5;
+            if (md5 is not null)
+            {
+                logger.LogInformation("MD5 hash detected: {MD5}", md5);
+            }
+
+            var byteRanges = headResponse.Headers.AcceptRanges.Contains(
+                "bytes",
+                StringComparer.OrdinalIgnoreCase
             );
+
+            if (byteRanges)
+            {
+                logger.LogInformation("Support for byte ranges detected.");
+            }
+
+            return (md5, byteRanges);
         }
 
-        async Task Download()
+        async Task DownloadFull()
         {
             using var getResponse = await httpClient.GetAsync(
                 source,
