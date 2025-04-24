@@ -28,19 +28,14 @@ _Please feel free to add any feedback you have on this exercise in the submissio
 
 ## Task
 ### Context
-The component that clinicians use for  downloading updates needs to be reliable in the unreliable network conditions they work with; often facing intermittent internet disconnection and slow internet speeds.
+The component that clinicians use for downloading updates needs to be reliable in the unreliable network conditions 
+they work with; often facing intermittent internet disconnection and slow internet speeds.
 
-We would like you to update the skeleton project in this repository to provide a way for clinicians to download our software given multiple network conditions. Details can be found in the requirements section below. 
-
-### Requirements
-
-1. The program should not terminate until the download has been completed successfully. This means that it should be resilient to:
-   - Internet disconnections of any length (from a couple of seconds to over two minutes) 
-   - Partial downloading. So that the download doesn't need to start from scratch every time if the CDN supports this.
-   - Downloading the file in one go, if the CDN does not support partial downloading
-4. The file is deleted if the integrity check fails after downloading. You can use the Content-MD5 for this: https://www.oreilly.com/library/view/http-the-definitive/1565925092/re17.html
-5. Progress is reported to the user throughout the download
-6. The user can cancel the download
+We've implemented the full download and would like you to extend it (you can choose the .NET or Java project) such that
+the program should not terminate until the download has been completed successfully. This means that it should be
+resilient to:
+- Internet disconnections of any length (from a couple of seconds to over two minutes) 
+- Partial downloading. So that the download doesn't need to start from scratch every time if the CDN [supports this](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Accept-Ranges).
 
 ### What does a successful submission look like?
 A high-quality submission will have the following:
@@ -48,9 +43,6 @@ A high-quality submission will have the following:
 - Appropriate use of language features to solve the problem in a simple way
 - Code that is easy to read and reason about
 - Unit tests
-
-_If you feel that modifying the skeleton project would create a better solution to these requirements, we encourage you to do so. We currently support submissions in either .NET (C#) or Java and have included skeleton projects for both._
-
 
 ## Tips
 
