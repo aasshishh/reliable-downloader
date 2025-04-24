@@ -3,6 +3,13 @@ using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Accurx.ReliableDownloader.Tests;
 
+/// <remarks>
+/// Feel free to swap out NUnit for any other test framework you may prefer and to use an alternative for mocking the
+/// HttpClient/HttpMessageHandler.
+///
+/// We're looking for unit tests only around your range requests implementation, please test your resilience
+/// implementation manually by running the Host project, we're not expecting you to write integration tests.
+/// </remarks>>
 [FixtureLifeCycle(LifeCycle.InstancePerTestCase)]
 public sealed class FileDownloadTests
 {

@@ -4,37 +4,43 @@
 
 Thank you for investing your time in our take-home exercise.
 
-We've based this exercise on a real problem we've had to solve to be able to release our desktop software, which allows clinicians to communicate with patients over text, video, questionnaires, and other methods to hundreds of thousands of users multiple times a week.
+We've based this exercise on a real problem we've had to solve to be able to release our desktop software, which allows
+clinicians to communicate with patients over text, video, questionnaires, and other methods to hundreds of thousands of
+users multiple times a week.
 
-### Why have we set this exercise?
+## Why have we set this exercise?
+
 So we get an insight into how you:
-* Understand and  analyse requirements to solve real user problems
-* Utilise language features, structure code and tests to verify your solution meets user requirements. 
 
-### What is expected of you?
- **Please complete the task detailed below**👇
+- Understand and analyse requirements to solve real user problems
+- Utilise language features, structure code and tests to verify your solution meets user requirements.
 
-**Please answer the following questions in `questions.md`**
-   - How did you approach solving the problem?
-   - How did you verify your solution works correctly?
-   - How long did you spend on the exercise?
-   - What would you add if you had more time and how?
-     
- **When you're finished please:**
-   - Download your solution including your completed `questions.md` file (in GitHub, at the route of your repository, click Code -> Download Zip)
-   - Submit your zipped solution, using the link in your invite email.
+## What is expected of you?
+
+Please complete the task detailed below 👇and then answer the following questions in [questions.md](questions.md)
+
+- How did you approach solving the problem?
+- How did you verify your solution works correctly?
+- How long did you spend on the exercise?
+- If you had more time what would you add and how?
+
+**When you're finished please:**
+
+- Download your solution including your completed [questions.md](questions.md) file (in GitHub, at the root of your repository, click Code -> Download Zip)
+- Submit your zipped solution, using the link in your invite email
+  _(you don't need to put your name in the zip filename)_
 
 _Please feel free to add any feedback you have on this exercise in the submission `feedback.md`_
 
 ## Task
 ### Context
-The component that clinicians use for downloading updates needs to be reliable in the unreliable network conditions 
+The component that clinicians use for downloading updates needs to be reliable in the unreliable network conditions
 they work with; often facing intermittent internet disconnection and slow internet speeds.
 
 We've implemented the full download and would like you to extend it (you can choose the .NET or Java project) such that
 the program should not terminate until the download has been completed successfully. This means that it should be
 resilient to:
-- Internet disconnections of any length (from a couple of seconds to over two minutes) 
+- Internet disconnections of any length (from a couple of seconds to over two minutes)
 - Partial downloading. So that the download doesn't need to start from scratch every time if the CDN [supports this](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Accept-Ranges).
 
 ### What does a successful submission look like?
