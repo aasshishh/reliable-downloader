@@ -14,54 +14,30 @@ public sealed class FileDownloader(ILogger<FileDownloader> logger, HttpClient ht
         CancellationToken cancellationToken = default
     )
     {
-        var (contentMd5, acceptsByteRanges) = await ParseHeaders();
+        var headRequest = new HttpRequestMessage(HttpMethod.Head, source);
+        var headResponse = await httpClient.SendAsync(headRequest, cancellationToken);
+        headResponse.EnsureSuccessStatusCode();
 
-        // TODO: Add partial content support based on acceptsByteRanges...
-        // 3. How would you handle large files or slow network conditions?
+        var md5 = headResponse.Content.Headers.ContentMD5;
 
-        await DownloadFull();
-
-        return contentMd5;
-
-        async Task<(byte[]? ContentMD5, bool AcceptsByteRanges)> ParseHeaders()
+        if (md5 is not null)
         {
-            var headRequest = new HttpRequestMessage(HttpMethod.Head, source);
-            var headResponse = await httpClient.SendAsync(headRequest, cancellationToken);
-            headResponse.EnsureSuccessStatusCode();
-
-            var md5 = headResponse.Content.Headers.ContentMD5;
-            if (md5 is not null)
-            {
-                logger.LogInformation("MD5 hash detected: {MD5}", md5);
-            }
-
-            var byteRanges = headResponse.Headers.AcceptRanges.Contains(
-                "bytes",
-                StringComparer.OrdinalIgnoreCase
-            );
-
-            if (byteRanges)
-            {
-                logger.LogInformation("Support for byte ranges detected.");
-            }
-
-            return (md5, byteRanges);
+            logger.LogInformation("MD5 hash detected: {MD5}", md5);
         }
 
-        async Task DownloadFull()
-        {
-            using var getResponse = await httpClient.GetAsync(
-                source,
-                HttpCompletionOption.ResponseHeadersRead,
-                cancellationToken
-            );
-            getResponse.EnsureSuccessStatusCode();
+        using var getResponse = await httpClient.GetAsync(
+            source,
+            HttpCompletionOption.ResponseHeadersRead,
+            cancellationToken
+        );
+        getResponse.EnsureSuccessStatusCode();
 
-            await using var contentStream = await getResponse.Content.ReadAsStreamAsync(
-                cancellationToken
-            );
+        await using var contentStream = await getResponse.Content.ReadAsStreamAsync(
+            cancellationToken
+        );
 
-            await contentStream.CopyToAsync(destination, cancellationToken);
-        }
+        await contentStream.CopyToAsync(destination, cancellationToken);
+
+        return md5;
     }
 }
