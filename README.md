@@ -4,53 +4,54 @@
 
 Thank you for investing your time in our take-home exercise.
 
-We've based this exercise on a real problem we've had to solve to be able to release our desktop software, which allows
-clinicians to communicate with patients over text, video, questionnaires, and other methods to hundreds of thousands of
-users multiple times a week.
+We've based this exercise on a real problem we've had to solve to be able to release our desktop software, which allows clinicians to communicate with patients over text, video, questionnaires, and other methods to hundreds of thousands of users multiple times a week.
 
 ## Why have we set this exercise?
 
 So we get an insight into how you:
 
 - Understand and analyse requirements to solve real user problems
-- Utilise language features, structure code and tests to verify your solution meets user requirements.
+- Utilise language features, structure code and tests to verify your solution meets user requirements
 
 ## What is expected of you?
 
-Please complete the task detailed below 👇and then answer the following questions in [questions.md](questions.md)
+Please complete 'The Task' detailed below 👇 (you can choose to implement in [C#](./dot-net/ReliableDownloader.sln) or [Java](./java/)) and then answer the following questions in [questions.md](./questions.md)
 
-- How did you approach solving the problem?
-- How did you verify your solution works correctly?
-- How long did you spend on the exercise?
-- If you had more time what would you add and how?
+1. How did you approach solving the problem?
+  - _if you used AI assistance we'd love to see examples of your prompts_
+2. How did you verify your solution works correctly?
+3. How long did you spend on the exercise?
+4. If you had more time what would you add and how?
+
+We'd welcome any feedback you have on this exercise in [feedback.md](./feedback.md)
 
 **When you're finished please:**
 
-- Download your solution including your completed [questions.md](questions.md) file (in GitHub, at the root of your repository, click Code -> Download Zip)
-- Submit your zipped solution, using the link in your invite email
-  _(you don't need to put your name in the zip filename)_
+1. Download your solution, ensuring you include your completed [questions.md](./questions.md) file (in GitHub, at the root of your repository, click Code -> Download Zip)
+2. Submit your zipped solution, using the link in your invite email
+   _(please avoid including your name/email in the zip filename)_
 
-_Please feel free to add any feedback you have on this exercise in the submission `feedback.md`_
+## The Task
 
-## Task
-### Context
-The component that clinicians use for downloading updates needs to be reliable in the unreliable network conditions
-they work with; often facing intermittent internet disconnection and slow internet speeds.
+Clinicans are faced with unreliable network conditions including intermittent disconnection and low bandwidth.  The updater they use for downloading the latest updates to our desktop app needs to work reliably in these challenging conditions.
 
-We've implemented the full download and would like you to extend it (you can choose the .NET or Java project) such that
-the program should not terminate until the download has been completed successfully. This means that it should be
-resilient to:
-- Internet disconnections of any length (from a couple of seconds to over two minutes)
-- Partial downloading. So that the download doesn't need to start from scratch every time if the CDN [supports this](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Accept-Ranges).
+We've provided a basic implementation of the updater that downloads a file from a URL to disk and verifies its integrity.  Your challenge is to extend it to:
+
+1. be resilient to network disconnections of _any_ length (from a couple of seconds to over two minutes)
+2. where the CDN supports [range requests](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Accept-Ranges), download the file in chunks and pick up where it left off if the user restarts the installer
 
 ### What does a successful submission look like?
-A high-quality submission will have the following:
-- Meet the requirements above
-- Appropriate use of language features to solve the problem in a simple way
-- Code that is easy to read and reason about
-- Unit tests
 
-## Tips
+A high-quality submission will:
+
+- meet the two requirements above
+- make appropriate use of modern language features to solve the problem in an elegant way
+- be easy to read and reason about
+- have unit tests around the range requests implementation
+
+We're not expecting unit tests around the resilience mechanism but we will be looking for evidience it has been manually tested by running it ourselves and reviewing your answer to question #2 in [questions.md](./questions.md).
+
+### Tips
 
 - Take the time to read through the task and description. There's guidance in there that can be helpful to approaching the problem
 - Try writing down some example inputs and outputs on paper
