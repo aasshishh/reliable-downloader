@@ -64,6 +64,7 @@ public sealed class FileDownloadTests
     {
         // Arrange
         _fakeHandler.SetupHead(acceptRanges: "bytes");
+        _fakeHandler.SetupValidDownload();
 
         // Act
         var destination = new MemoryStream();

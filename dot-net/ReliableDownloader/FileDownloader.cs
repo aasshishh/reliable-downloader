@@ -20,11 +20,6 @@ public sealed class FileDownloader(ILogger<FileDownloader> logger, HttpClient ht
 
         var md5 = headResponse.Content.Headers.ContentMD5;
 
-        if (md5 is not null)
-        {
-            logger.LogInformation("MD5 hash detected: {MD5}", md5);
-        }
-
         using var getResponse = await httpClient.GetAsync(
             source,
             HttpCompletionOption.ResponseHeadersRead,

@@ -23,7 +23,7 @@ So we get an insight into how you:
 3. How long did you spend on the exercise?
 4. If you had more time what would you add and how?
 
-We'd welcome any feedback you have on this exercise in [feedback.md](./feedback.md)
+We'd welcome any feedback you have on this exercise in [feedback.md](./feedback.md).
 
 **When you're finished please:**
 
@@ -35,20 +35,20 @@ _(please avoid including your name/email in the zip filename)_
 
 A high-quality submission will:
 
-- meet the requirements above
+- meet the task requirements
 - make appropriate use of modern language features to solve the problem in an elegant way
 - be easy to read and reason about
 - have unit tests around the range requests implementation
-- have evidence that the resilience mechanism has been manually tested (we will run it ourselves and review your answer to question #2 in [questions.md](./questions.md)).
+- have evidence that the resilience mechanism has been manually tested (we will run it ourselves and review your answer to question #2 in [questions.md](./questions.md))
 
 ### Tips
 
-- Take the time to read through the task and description.
-- Imagine you are submitting this for PR review, add some code comments as you might on a PR if you think it will be helpful to share your thought process (we recommend [conventional comments](https://conventionalcomments.org/)).
-- Prioritise implementing the requirements but do spend some time refactoring to improve your design.
-- You can throttle your internet connection using NetLimiter or similar
-- You can simulate internet disconnections by disconnecting wifi/ethernet
-- The use of third-party libraries is encouraged but we recommend keeping to well-established libraries (unless there's one you're really excited to share with us, please use [questions.md](./questions.md) to tell us about it)
+- take the time to read through the task and description
+- imagine you are submitting this for PR review, add some code comments as you might on a PR if you think it will be helpful to share your thought process (we recommend [conventional comments](https://conventionalcomments.org/))
+- prioritise implementing the requirements but do spend some time refactoring to improve your design
+- you can throttle your internet connection using NetLimiter or similar
+- you can simulate internet disconnections by disconnecting wifi/ethernet
+- the use of third-party libraries is encouraged but we recommend keeping to well-established libraries (unless there's one you're really excited to share with us, please use [questions.md](./questions.md) to tell us about it)
 
 ## The Task
 
