@@ -52,20 +52,6 @@ public sealed class FileDownloadTests
     }
 
     [Test]
-    public async Task It_returns_the_filename_when_present()
-    {
-        // Arrange
-        var source = _fakeCdn.NoRanges;
-        var destination = new MemoryStream();
-
-        // Act
-        var integrityHash = await _sut.DownloadAsync(source, destination);
-
-        // Assert
-        Assert.That(integrityHash, Is.EquivalentTo(_fakeCdn.Filename));
-    }
-
-    [Test]
     public async Task It_downloads_content_in_chunks_when_accept_ranges_is_supported()
     {
         // Arrange

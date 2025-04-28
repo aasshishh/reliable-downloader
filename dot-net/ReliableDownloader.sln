@@ -6,6 +6,13 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ReliableDownloader.Tests", 
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ReliableDownloader.Host", "ReliableDownloader.Host\ReliableDownloader.Host.csproj", "{0564586D-F29F-48EC-9A13-C6001DDF9A93}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Docs", "Docs", "{BFE63445-4288-4FA1-9D6B-E0514F46AC08}"
+	ProjectSection(SolutionItems) = preProject
+		..\feedback.md = ..\feedback.md
+		..\questions.md = ..\questions.md
+		..\README.md = ..\README.md
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
