@@ -13,62 +13,66 @@ namespace Accurx.ReliableDownloader.Tests;
 [FixtureLifeCycle(LifeCycle.InstancePerTestCase)]
 public sealed class FileDownloadTests
 {
-    private readonly FakeHttpMessageHandler _fakeHandler;
     private readonly FileDownloader _sut;
+    private readonly FakeCdn _fakeCdn;
 
     public FileDownloadTests()
     {
-        _fakeHandler = new FakeHttpMessageHandler();
-        _sut = new FileDownloader(new NullLogger<FileDownloader>(), new HttpClient(_fakeHandler));
+        _fakeCdn = new FakeCdn();
+        _sut = new FileDownloader(new NullLogger<FileDownloader>(), new HttpClient(_fakeCdn));
     }
 
     [Test]
     public async Task It_downloads_content_when_accept_ranges_is_not_supported()
     {
         // Arrange
-        _fakeHandler.SetupHead();
-        var expectedContent = _fakeHandler.SetupValidDownload();
+        var source = _fakeCdn.NoRanges;
+        var destination = new MemoryStream();
 
         // Act
-        var destination = new MemoryStream();
-        await _sut.DownloadAsync(new Uri("https://example.com/example.msi"), destination);
+        await _sut.DownloadAsync(source, destination);
 
         // Assert
         var content = await destination.GetContentAsync();
-
-        Assert.That(content, Is.EqualTo(expectedContent));
+        Assert.That(content, Is.EqualTo(_fakeCdn.Content));
     }
 
     [Test]
     public async Task It_returns_the_integrity_hash_when_present()
     {
         // Arrange
-        byte[] expectedHash = [12, 34, 56, 78, 90];
-        _fakeHandler.SetupHead(expectedHash);
-        _fakeHandler.SetupValidDownload();
-
-        // Act
+        var source = _fakeCdn.NoRanges;
         var destination = new MemoryStream();
 
-        var integrityHash = await _sut.DownloadAsync(
-            new Uri("https://example.com/example.msi"),
-            destination
-        );
+        // Act
+        var integrityHash = await _sut.DownloadAsync(source, destination);
 
         // Assert
-        Assert.That(integrityHash, Is.EquivalentTo(expectedHash));
+        Assert.That(integrityHash, Is.EquivalentTo(_fakeCdn.Hash!));
+    }
+
+    [Test]
+    public async Task It_returns_the_filename_when_present()
+    {
+        // Arrange
+        var source = _fakeCdn.NoRanges;
+        var destination = new MemoryStream();
+
+        // Act
+        var integrityHash = await _sut.DownloadAsync(source, destination);
+
+        // Assert
+        Assert.That(integrityHash, Is.EquivalentTo(_fakeCdn.Filename));
     }
 
     [Test]
     public async Task It_downloads_content_in_chunks_when_accept_ranges_is_supported()
     {
         // Arrange
-        _fakeHandler.SetupHead(acceptRanges: "bytes");
-        _fakeHandler.SetupValidDownload();
+        var destination = new MemoryStream();
 
         // Act
-        var destination = new MemoryStream();
-        await _sut.DownloadAsync(new Uri("https://example.com/example.msi"), destination);
+        await _sut.DownloadAsync(_fakeCdn.AcceptsRanges, destination);
 
         // Assert
         Assert.Inconclusive("TODO");

@@ -18,7 +18,10 @@ public sealed class FileDownloader(ILogger<FileDownloader> logger, HttpClient ht
         var headResponse = await httpClient.SendAsync(headRequest, cancellationToken);
         headResponse.EnsureSuccessStatusCode();
 
-        var md5 = headResponse.Content.Headers.ContentMD5;
+        if (headResponse.Headers.AcceptRanges.Contains("bytes"))
+        {
+            logger.LogWarning("Accept-Ranges: bytes is not yet supported, downloading whole file");
+        }
 
         using var getResponse = await httpClient.GetAsync(
             source,
@@ -33,6 +36,6 @@ public sealed class FileDownloader(ILogger<FileDownloader> logger, HttpClient ht
 
         await contentStream.CopyToAsync(destination, cancellationToken);
 
-        return md5;
+        return headResponse.Content.Headers.ContentMD5;
     }
 }
