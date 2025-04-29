@@ -14,7 +14,6 @@ public class FileDownloaderImpl implements FileDownloader
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(FileDownloaderImpl.class);
     private static final String ACCEPT_RANGES_HEADER = "Accept-Ranges";
-    private static final String BYTES = "bytes";
     private static final String CONTENT_MD5 = "Content-MD5";
 
     private final HttpClient httpClient;
@@ -34,10 +33,12 @@ public class FileDownloaderImpl implements FileDownloader
                 HttpResponse.BodyHandlers.discarding()
         );
 
-        VerifySuccessStatusCode(headResponse);
+        if (!(headResponse.statusCode() >= 200 && headResponse.statusCode() <= 299))
+        {
+            throw new Exception("Unexpected status code: " + headResponse.statusCode());
+        }
 
-        var supportsPartialDownload = DoesSupportPartialDownload(headResponse);
-        if (supportsPartialDownload)
+        if (headResponse.headers().allValues(ACCEPT_RANGES_HEADER).contains("bytes"))
         {
             LOGGER.warn("Accept-Ranges: bytes is not yet supported, downloading whole file");
         }
@@ -50,7 +51,10 @@ public class FileDownloaderImpl implements FileDownloader
                 HttpResponse.BodyHandlers.ofInputStream()
         );
 
-        VerifySuccessStatusCode(getResponse);
+        if (!(getResponse.statusCode() >= 200 && getResponse.statusCode() <= 299))
+        {
+            throw new Exception("Unexpected status code: " + getResponse.statusCode());
+        }
 
         try (var body = getResponse.body())
         {
@@ -58,17 +62,5 @@ public class FileDownloaderImpl implements FileDownloader
         }
 
         return getResponse.headers().firstValue(CONTENT_MD5);
-    }
-
-    private void VerifySuccessStatusCode(HttpResponse<?> response) throws Exception {
-        if (!(response.statusCode() >= 200 && response.statusCode() <= 299))
-        {
-            throw new Exception("Unexpected status code: " + response.statusCode());
-        }
-    }
-
-    private boolean DoesSupportPartialDownload(HttpResponse<Void> headResponse) {
-        Optional<String> acceptRanges = headResponse.headers().firstValue(ACCEPT_RANGES_HEADER);
-        return acceptRanges.isPresent() && acceptRanges.get().equals(BYTES);
     }
 }
