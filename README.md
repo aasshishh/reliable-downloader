@@ -6,59 +6,56 @@ Thank you for investing your time in our take-home exercise.
 
 We've based this exercise on a real problem we've had to solve to be able to release our desktop software, which allows clinicians to communicate with patients over text, video, questionnaires, and other methods to hundreds of thousands of users multiple times a week.
 
-### Why have we set this exercise?
+## Why have we set this exercise?
+
 So we get an insight into how you:
-* Understand and  analyse requirements to solve real user problems
-* Utilise language features, structure code and tests to verify your solution meets user requirements. 
 
-### What is expected of you?
- **Please complete the task detailed below**👇
+- Understand and analyse requirements to solve real user problems
+- Utilise language features, structure code and tests to verify your solution meets user requirements
 
-**Please answer the following questions in `questions.md`**
-   - How did you approach solving the problem?
-   - How did you verify your solution works correctly?
-   - How long did you spend on the exercise?
-   - What would you add if you had more time and how?
-     
- **When you're finished please:**
-   - Download your solution including your completed `questions.md` file (in GitHub, at the route of your repository, click Code -> Download Zip)
-   - Submit your zipped solution, using the link in your invite email.
+## What is expected of you?
 
-_Please feel free to add any feedback you have on this exercise in the submission `feedback.md`_
+ Please complete 'The Task' detailed below 👇 (you can choose to implement in [C#](./dot-net/ReliableDownloader.sln) or [Java](./java/)) and then answer the following questions in [questions.md](./questions.md)
 
-## Task
-### Context
-The component that clinicians use for  downloading updates needs to be reliable in the unreliable network conditions they work with; often facing intermittent internet disconnection and slow internet speeds.
+1. How did you approach solving the problem?
+   - _if you used AI assistance we'd love to see examples of your prompts_
+2. How did you verify your solution works correctly?
+3. How long did you spend on the exercise?
+4. If you had more time what would you add and how?
 
-We would like you to update the skeleton project in this repository to provide a way for clinicians to download our software given multiple network conditions. Details can be found in the requirements section below. 
+We'd welcome any feedback you have on this exercise in [feedback.md](./feedback.md).
 
-### Requirements
+**When you're finished please:**
 
-1. The program should not terminate until the download has been completed successfully. This means that it should be resilient to:
-   - Internet disconnections of any length (from a couple of seconds to over two minutes) 
-   - Partial downloading. So that the download doesn't need to start from scratch every time if the CDN supports this.
-   - Downloading the file in one go, if the CDN does not support partial downloading
-4. The file is deleted if the integrity check fails after downloading. You can use the Content-MD5 for this: https://www.oreilly.com/library/view/http-the-definitive/1565925092/re17.html
-5. Progress is reported to the user throughout the download
-6. The user can cancel the download
+1. Download your solution, ensuring you include your completed [questions.md](./questions.md) file (in GitHub, at the root of your repository, click Code -> Download Zip)
+2. Submit your zipped solution, using the link in your invite email
+_(please avoid including your name/email in the zip filename)_
 
 ### What does a successful submission look like?
-A high-quality submission will have the following:
-- Meet the requirements above
-- Appropriate use of language features to solve the problem in a simple way
-- Code that is easy to read and reason about
-- Unit tests
 
-_If you feel that modifying the skeleton project would create a better solution to these requirements, we encourage you to do so. We currently support submissions in either .NET (C#) or Java and have included skeleton projects for both._
+A high-quality submission will:
 
+- meet the task requirements
+- make appropriate use of modern language features to solve the problem in an elegant way
+- be easy to read and reason about
+- have unit tests around the range requests implementation
+- have evidence that the resilience mechanism has been manually tested (we will run it ourselves and review your answer to question #2 in [questions.md](./questions.md))
 
-## Tips
+### Tips
 
-- Take the time to read through the task and description. There's guidance in there that can be helpful to approaching the problem
-- Try writing down some example inputs and outputs on paper
-- Try a brute force approach and then optimise the code
-- Add some comments to your code if you think it will be helpful to share your thought process to someone assessing it
-- You can throttle your internet connection using NetLimiter or similar
-- You can simulate internet disconnections by disconnecting wifi/ethernet
-- Different behaviours occur after following different periods of disconnection, two seconds and two minutes are sweet spots for exercising key failure modes
-- The use of third-party libraries is fine, however, do bear in mind that overusing these may limit your ability to demonstrate your skills
+- take the time to read through the task and description
+- imagine you are submitting this for PR review, add some code comments as you might on a PR if you think it will be helpful to share your thought process (we recommend [conventional comments](https://conventionalcomments.org/))
+- prioritise implementing the requirements but do spend some time refactoring to improve your design
+- you can throttle your internet connection using NetLimiter or similar
+- you can simulate internet disconnections by disconnecting wifi/ethernet
+- the use of third-party libraries is encouraged but we recommend keeping to well-established libraries (unless there's one you're really excited to share with us, please use [questions.md](./questions.md) to tell us about it)
+
+## The Task
+
+Clinicans are faced with unreliable network conditions including intermittent disconnection and low bandwidth.  The downloader they use to get the latest updates to our desktop app needs to work reliably in these challenging conditions.
+
+We've provided a basic implementation of the downloader that downloads a file from a URL to disk and verifies its integrity.  Your challenge is to extend it to:
+
+1. be resilient to network disconnections of _any_ length (from a couple of seconds to over two minutes)
+2. where the CDN supports [range requests](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Accept-Ranges), download the file in chunks and
+3. pick up where it left off if the user restarts the installer
