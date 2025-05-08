@@ -23,13 +23,13 @@ public class FileDownloadCommand {
         this.downloadSettings = downloadSettings;
     }
 
-    public void Run() throws Exception {
+    public void run() throws Exception {
 
-        Path destinationFilePath = downloadSettings.DestinationFilePath();
+        Path destinationFilePath = downloadSettings.destinationFilePath();
 
         LOGGER.info(
                 "Starting download from {} to {}...",
-                downloadSettings.SourceUrl(),
+                downloadSettings.sourceUrl(),
                 destinationFilePath.toAbsolutePath()
         );
 
@@ -37,12 +37,12 @@ public class FileDownloadCommand {
 
         try (OutputStream outputStream = Files.newOutputStream(destinationFilePath, StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.CREATE))
         {
-            contentMd5Opt = fileDownloader.DownloadFile(downloadSettings.SourceUrl(), outputStream);
+            contentMd5Opt = fileDownloader.downloadFile(downloadSettings.sourceUrl(), outputStream);
         }
 
         if (contentMd5Opt.isPresent()) {
             String contentMd5 = contentMd5Opt.get();
-            String computedMd5 = Md5.ContentMd5(destinationFilePath.toFile());
+            String computedMd5 = Md5.contentMd5(destinationFilePath.toFile());
             if (contentMd5.equals(computedMd5)) {
                 LOGGER.info("MD5 hash is present, download integrity verified.");
             }

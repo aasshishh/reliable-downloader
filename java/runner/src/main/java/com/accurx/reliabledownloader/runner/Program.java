@@ -22,6 +22,6 @@ public class Program {
                 ),
                 downloadSettings
         );
-        fileDownloadCommand.Run();
+        fileDownloadCommand.run();
     }
 }

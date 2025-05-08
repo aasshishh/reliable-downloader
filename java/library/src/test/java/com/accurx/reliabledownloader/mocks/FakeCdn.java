@@ -24,11 +24,11 @@ import java.util.regex.Pattern;
  */
 public class FakeCdn implements BeforeAllCallback, AfterAllCallback {
 
-    private static final String AcceptRangesHeader = "Accept-Ranges";
-    private static final String ContentDispositionHeader = "Content-Disposition";
-    private static final String ContentMd5 = "Content-MD5";
-    private static final String ContentLength = "Content-Length";
-    private static final String AcceptsRangesBytes = "bytes";
+    private static final String ACCEPT_RANGES_HEADER = "Accept-Ranges";
+    private static final String CONTENT_DISPOSITION_HEADER = "Content-Disposition";
+    private static final String CONTENT_MD5_HEADER = "Content-MD5";
+    private static final String CONTENT_LENGTH = "Content-Length";
+    private static final String ACCEPTS_RANGES_BYTES = "bytes";
 
     private final String fileName;
     private final String content;
@@ -49,12 +49,12 @@ public class FakeCdn implements BeforeAllCallback, AfterAllCallback {
         this.server.setDispatcher(new CndDispatcher());
     }
 
-    public URI GetNoRangeUri()
+    public URI getNoRangeUri()
     {
         return server.url(noAcceptRangesPath).uri();
     }
 
-    public URI GetAcceptRangesUri()
+    public URI getAcceptRangesUri()
     {
         return server.url(acceptRangesPath).uri();
     }
@@ -91,7 +91,7 @@ public class FakeCdn implements BeforeAllCallback, AfterAllCallback {
             }
             else if (acceptRangesPath.equals(request.getPath()))
             {
-                mockResponse.addHeader(AcceptRangesHeader, AcceptsRangesBytes);
+                mockResponse.addHeader(ACCEPT_RANGES_HEADER, ACCEPTS_RANGES_BYTES);
             }
             else
             {
@@ -101,7 +101,7 @@ public class FakeCdn implements BeforeAllCallback, AfterAllCallback {
 
             if ("HEAD".equals(request.getMethod()))
             {
-                mockResponse.addHeader(ContentLength, content.getBytes(StandardCharsets.UTF_8));
+                mockResponse.addHeader(CONTENT_LENGTH, content.getBytes(StandardCharsets.UTF_8));
             }
             else if ("GET".equals(request.getMethod()))
             {
@@ -112,19 +112,19 @@ public class FakeCdn implements BeforeAllCallback, AfterAllCallback {
                 }
                  else
                  {
-                    HandlePartialDownload(rangeHeader, mockResponse);
+                    handlePartialDownload(rangeHeader, mockResponse);
                 }
             }
 
-            mockResponse.addHeader(ContentDispositionHeader,"attachment; filename=\"" +  fileName + "\"");
-            mockResponse.addHeader(ContentMd5, contentHash);
+            mockResponse.addHeader(CONTENT_DISPOSITION_HEADER,"attachment; filename=\"" +  fileName + "\"");
+            mockResponse.addHeader(CONTENT_MD5_HEADER, contentHash);
 
             return mockResponse;
         }
 
-        private void HandlePartialDownload(String rangeHeader, MockResponse mockResponse) {
+        private void handlePartialDownload(String rangeHeader, MockResponse mockResponse) {
 
-            Range downloadRange = Range.ParseOne(rangeHeader);
+            Range downloadRange = Range.parseOne(rangeHeader);
 
             byte[] bytes = content.getBytes(StandardCharsets.UTF_8);
 
@@ -140,7 +140,7 @@ public class FakeCdn implements BeforeAllCallback, AfterAllCallback {
                 Buffer buffer = new Buffer().write(Arrays.copyOfRange(bytes, from, to));
                 mockResponse.setResponseCode(206);
                 mockResponse.setBody(buffer);
-                mockResponse.setHeader(ContentLength, to - from);
+                mockResponse.setHeader(CONTENT_LENGTH, to - from);
             }
         }
     }
@@ -149,7 +149,7 @@ public class FakeCdn implements BeforeAllCallback, AfterAllCallback {
 
         private static final Pattern rangeHeaderMatcher = Pattern.compile("^bytes=(?<from>\\d+)-(?<to>\\d+)$");
 
-        public static Range ParseOne(String rangeHeader)
+        public static Range parseOne(String rangeHeader)
         {
             Matcher matcher = rangeHeaderMatcher.matcher(rangeHeader);
             if (!matcher.matches())
