@@ -23,7 +23,7 @@ public class FileDownloaderImpl implements FileDownloader
     }
 
     @Override
-    public Optional<String> DownloadFile(URI contentFileUrl, OutputStream destination) throws Exception {
+    public Optional<String> downloadFile(URI contentFileUrl, OutputStream destination) throws Exception {
 
         var headResponse = httpClient.send(
                 HttpRequest.newBuilder()

@@ -29,7 +29,7 @@ public class FileDownloaderImplTests {
     public void It_downloads_content_when_accept_ranges_is_not_supported() throws Exception {
         var destination = new ByteArrayOutputStream();
 
-        fileDownloader.DownloadFile(fakeCdn.GetNoRangeUri(), destination);
+        fileDownloader.downloadFile(fakeCdn.getNoRangeUri(), destination);
 
         var content = destination.toString();
         Assertions.assertEquals(fakeCdn.getContent(), content);
@@ -39,7 +39,7 @@ public class FileDownloaderImplTests {
     public void It_returns_the_integrity_hash_when_present() throws Exception {
         var destination = new ByteArrayOutputStream();
 
-        var hash = fileDownloader.DownloadFile(fakeCdn.GetNoRangeUri(), destination);
+        var hash = fileDownloader.downloadFile(fakeCdn.getNoRangeUri(), destination);
 
         Assertions.assertEquals(Optional.of(fakeCdn.getContentHash()), hash);
     }
@@ -48,7 +48,7 @@ public class FileDownloaderImplTests {
     public void It_downloads_content_in_chunks_when_accept_ranges_is_supported() throws Exception {
         var destination = new ByteArrayOutputStream();
 
-        fileDownloader.DownloadFile(fakeCdn.GetAcceptRangesUri(), destination);
+        fileDownloader.downloadFile(fakeCdn.getAcceptRangesUri(), destination);
 
         Assumptions.abort("TODO");
     }

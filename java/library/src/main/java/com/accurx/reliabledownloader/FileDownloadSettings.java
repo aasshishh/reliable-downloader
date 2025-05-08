@@ -4,6 +4,6 @@ import java.net.URI;
 import java.nio.file.Path;
 
 public record FileDownloadSettings(
-        URI SourceUrl,
-        Path DestinationFilePath
+        URI sourceUrl,
+        Path destinationFilePath
 ) {}

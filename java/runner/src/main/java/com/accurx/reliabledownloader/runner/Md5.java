@@ -9,7 +9,7 @@ import java.io.IOException;
 
 public class Md5 {
 
-    public static String ContentMd5(File file) throws IOException
+    public static String contentMd5(File file) throws IOException
     {
         return BaseEncoding.base64().encode(
             Files.asByteSource(file).hash(Hashing.md5()).asBytes()
