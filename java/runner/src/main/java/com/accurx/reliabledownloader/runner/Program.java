@@ -14,7 +14,7 @@ public class Program {
 
     private static final FileDownloadSettings DEFAULT_SETTINGS = new FileDownloadSettings(
             URI.create("https://installer.accurx.com/chain/4.22.50587.0/accuRx.Installer.Local.msi"),
-            Path.of("myfirstdownload.msi"),
+            Path.of("./downloads/msiInstance.msi"),
             "ReliableDownloader"
     );
 

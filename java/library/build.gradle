@@ -1,7 +1,6 @@
 
 plugins {
     id 'java-library'
-    id 'application'
 }
 
 group = 'com.accurx'
@@ -64,7 +63,4 @@ tasks.withType(JavaCompile) {
 tasks.withType(Test) {
     jvmArgs += "--add-opens=java.base/java.net.http=ALL-UNNAMED"
     jvmArgs += "--add-opens=java.base/jdk.internal.reflect=ALL-UNNAMED" // Sometimes also needed for reflection
-}
-application {
-    applicationDefaultJvmArgs = ['--enable-preview']
 }

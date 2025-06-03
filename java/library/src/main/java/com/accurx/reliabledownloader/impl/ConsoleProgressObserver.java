@@ -10,7 +10,7 @@ public class ConsoleProgressObserver implements DownloadProgressObserver {
     @Override
     public void onProgressUpdate(long bytesDownloaded, long totalBytes) {
         double progress = (double) bytesDownloaded / totalBytes * 100;
-        logger.info("Download progress: {:.2f}%", progress);
+        logger.info("Download progress: {}%", String.format("%.2f", progress));
     }
 
     @Override

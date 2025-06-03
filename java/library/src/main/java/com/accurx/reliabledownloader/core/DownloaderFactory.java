@@ -4,16 +4,22 @@ import com.accurx.reliabledownloader.impl.HTTPClientFileDownloader;
 import com.accurx.reliabledownloader.impl.ProgressTrackingDownloader;
 import com.accurx.reliabledownloader.impl.ReliableDownloader;
 import com.accurx.reliabledownloader.impl.RetryingDownloader;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.net.http.HttpClient;
 import java.util.function.Supplier;
 
 public class DownloaderFactory {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(DownloaderFactory.class);
+
     public FileDownloader createDownloader(DownloaderConfig config, FileDownloadSettings settings) {
         if (settings.downloader().equals("ReliableDownloader")) {
+            LOGGER.info("Using reliable downloader");
             return createReliableDownloader(config);
         }
+        LOGGER.info("Using HTTP client based downloader");
         return createHTTPClientFileDownloader(config);
     }
 
