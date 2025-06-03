@@ -1,5 +1,6 @@
 package com.accurx.reliabledownloader.impl;
 
+import com.accurx.reliabledownloader.core.AbstractDownloader;
 import com.accurx.reliabledownloader.core.FileDownloader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -14,8 +15,8 @@ import java.net.http.HttpResponse;
 import java.util.Optional;
 import java.util.function.Supplier;
 
-public class FileDownloaderImpl implements FileDownloader {
-    private static final Logger LOGGER = LoggerFactory.getLogger(FileDownloaderImpl.class);
+public class HTTPClientFileDownloader extends AbstractDownloader implements FileDownloader {
+    private static final Logger LOGGER = LoggerFactory.getLogger(HTTPClientFileDownloader.class);
     private static final String ACCEPT_RANGES_HEADER = "Accept-Ranges";
     private static final String CONTENT_MD5 = "Content-MD5";
     private static final int BUFFER_SIZE = 8192;
@@ -27,7 +28,7 @@ public class FileDownloaderImpl implements FileDownloader {
      * @deprecated Use FileDownloaderImpl(Supplier<HttpClient>) instead
      */
     @Deprecated
-    public FileDownloaderImpl(HttpClient.Builder httpClientBuilder) {
+    public HTTPClientFileDownloader(HttpClient.Builder httpClientBuilder) {
         this(() -> httpClientBuilder.build());
     }
     
@@ -35,12 +36,22 @@ public class FileDownloaderImpl implements FileDownloader {
      * Creates a new FileDownloaderImpl with the given HttpClient supplier
      * @param httpClientSupplier Supplier that provides HttpClient instances
      */
-    public FileDownloaderImpl(Supplier<HttpClient> httpClientSupplier) {
+    public HTTPClientFileDownloader(Supplier<HttpClient> httpClientSupplier) {
         this.httpClientSupplier = httpClientSupplier;
     }
 
     @Override
-    public Optional<String> downloadFile(URI contentFileUrl, OutputStream destination) throws IOException {
+    protected void beforeDownload() {
+
+    }
+
+    @Override
+    protected void afterDownload() {
+
+    }
+
+    @Override
+    public Optional<String> performDownload(URI contentFileUrl, OutputStream destination) throws IOException {
         try {
             var headResponse = sendHeadRequest(contentFileUrl);
             validateResponse(headResponse, "HEAD");
@@ -89,13 +100,24 @@ public class FileDownloaderImpl implements FileDownloader {
     }
 
     private void transferContent(HttpResponse<InputStream> response, OutputStream destination) throws IOException {
+        long totalBytes = response.headers()
+                .firstValueAsLong("Content-Length")
+                .orElse(-1L);
+        long bytesTransferred = 0;
+
         try (var inputStream = response.body()) {
             byte[] buffer = new byte[BUFFER_SIZE];
             int bytesRead;
             while ((bytesRead = inputStream.read(buffer)) != -1) {
                 destination.write(buffer, 0, bytesRead);
+                bytesTransferred += bytesRead;
+                notifyProgress(bytesTransferred, totalBytes);
             }
             destination.flush();
+            notifyComplete();
+        } catch (IOException e) {
+            notifyError(e);
+            throw e;
         }
     }
 }

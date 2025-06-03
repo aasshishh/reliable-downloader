@@ -5,5 +5,6 @@ import java.nio.file.Path;
 
 public record FileDownloadSettings(
         URI sourceUrl,
-        Path destinationFilePath
+        Path destinationFilePath,
+        String downloader
 ) {}

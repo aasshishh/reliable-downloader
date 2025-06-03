@@ -1,0 +1,82 @@
+package com.accurx.reliabledownloader.core;
+
+import com.accurx.reliabledownloader.util.DownloadProgressObserver;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+import java.io.OutputStream;
+import java.net.URI;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+
+public abstract class AbstractDownloader implements FileDownloader {
+    private static final Logger LOGGER = LoggerFactory.getLogger(AbstractDownloader.class);
+    private final List<DownloadProgressObserver> observers = new ArrayList<>();
+
+    protected abstract void beforeDownload();
+    protected abstract void afterDownload();
+
+    protected abstract Optional<String> performDownload(URI source, OutputStream destination) throws Exception;
+
+    @Override
+    public final Optional<String> downloadFile(URI source, OutputStream destination) throws Exception {
+        beforeDownload();
+        try {
+            Optional<String> result = performDownload(source, destination);
+            notifyComplete(); // Notify completion only on successful download
+            return result;
+        } catch (IOException e) { // Catch specific IOExceptions
+            notifyError(e); // Notify observers about the error
+            throw e; // Re-throw the exception so callers know it failed
+        } catch (InterruptedException e) { // Catch InterruptedException specifically
+            Thread.currentThread().interrupt(); // Restore the interrupted status
+            notifyError(new IOException("Download interrupted", e));
+            throw new IOException("Download interrupted", e); // Re-throw as IOException
+        } catch (Exception e) { // Catch any other unexpected exceptions
+            LOGGER.error("An unexpected error occurred during download", e);
+            notifyError(new IOException("Unexpected error during download", e));
+            throw new IOException("Unexpected error during download", e); // Re-throw
+        } finally {
+            afterDownload();
+        }
+    }
+
+
+    public void addObserver(DownloadProgressObserver observer) {
+        observers.add(observer);
+    }
+
+    // Helper methods to notify observers
+    protected void notifyProgress(long bytes, long total) {
+        observers.forEach(o -> {
+            try {
+                o.onProgressUpdate(bytes, total);
+            } catch (Exception e) {
+                LOGGER.warn("Observer threw exception", e);
+            }
+        });
+    }
+
+    protected void notifyComplete() {
+        observers.forEach(o -> {
+            try {
+                o.onComplete();
+            } catch (Exception e) {
+                LOGGER.warn("Observer threw exception", e);
+            }
+        });
+    }
+
+    protected void notifyError(Exception e) {
+        observers.forEach(o -> {
+            try {
+                o.onError(e);
+            } catch (Exception ex) {
+                LOGGER.warn("Observer threw exception", ex);
+            }
+        });
+    }
+
+}

@@ -1,132 +1,169 @@
-
 package com.accurx.reliabledownloader.impl;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.RandomAccessFile;
+import com.accurx.reliabledownloader.core.DownloaderConfig;
+import com.accurx.reliabledownloader.core.FileDownloader;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.*;
 import java.net.HttpURLConnection;
-import java.net.URL;
-import java.nio.file.Files;
-import java.nio.file.Path;
+import java.net.URI;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Base64;
+import java.util.Optional;
 
-public class ReliableDownloader {
-    // Configuration
-    private final int CHUNK_SIZE = 1024 * 1024; // 1MB chunks
-    private final int MAX_RETRIES = 3;
-    private final int RETRY_DELAY_MS = 5000; // 5 seconds
+public class ReliableDownloader implements FileDownloader {
+    private static final Logger LOGGER = LoggerFactory.getLogger(ReliableDownloader.class);
 
-    private final String downloadUrl;
-    private final Path destinationPath;
-    private final String expectedHash;
-    private final long totalSize;
-
-    // State tracking
-    private long downloadedBytes = 0;
+    private final DownloaderConfig config;
     private boolean supportsRangeRequests = false;
+    private long totalSize = -1;
+    private long downloadedBytes = 0;
 
-    public ReliableDownloader(String downloadUrl, Path destinationPath, String expectedHash) throws IOException {
-        this.downloadUrl = downloadUrl;
-        this.destinationPath = destinationPath;
-        this.expectedHash = expectedHash;
-        this.totalSize = determineFileSize();
+    public ReliableDownloader(DownloaderConfig config) {
+        this.config = config;
     }
 
-    private long determineFileSize() throws IOException {
-        HttpURLConnection conn = (HttpURLConnection) new URL(downloadUrl).openConnection();
+    @Override
+    public Optional<String> downloadFile(URI contentFileUrl, OutputStream destination) throws Exception {
+        try {
+            initializeDownload(contentFileUrl);
+            ByteArrayOutputStream md5Buffer = new ByteArrayOutputStream();
+
+            while (downloadedBytes < totalSize) {
+                try {
+                    downloadChunk(contentFileUrl, new MultiOutputStream(destination, md5Buffer));
+                } catch (IOException e) {
+                    handleDownloadError(e, contentFileUrl, destination);
+                }
+            }
+
+            if (config.isVerifyHash()) {
+                String contentMd5 = calculateMd5(md5Buffer.toByteArray());
+                return Optional.of(contentMd5);
+            }
+
+            return Optional.empty();
+        } catch (Exception e) {
+            LOGGER.error("Download failed: {}", e.getMessage());
+            throw e;
+        }
+    }
+
+    private void initializeDownload(URI contentFileUrl) throws IOException {
+        HttpURLConnection conn = (HttpURLConnection) contentFileUrl.toURL().openConnection();
+        conn.setConnectTimeout((int) config.getConnectTimeout().toMillis());
+        conn.setReadTimeout((int) config.getReadTimeout().toMillis());
         conn.setRequestMethod("HEAD");
         conn.connect();
 
         // Check if server supports range requests
         String acceptRanges = conn.getHeaderField("Accept-Ranges");
-        this.supportsRangeRequests = acceptRanges != null && acceptRanges.equals("bytes");
+        this.supportsRangeRequests = config.isResumeSupport() &&
+                acceptRanges != null &&
+                acceptRanges.equals("bytes");
 
-        long size = conn.getContentLengthLong();
+        totalSize = conn.getContentLengthLong();
         conn.disconnect();
 
-        if (size == -1) {
+        if (totalSize == -1) {
             throw new IOException("Could not determine file size");
         }
-        return size;
+
+        LOGGER.info("Download size: {} bytes, Resume support: {}", totalSize, supportsRangeRequests);
     }
 
-    private long getResumePosition() {
-        if (Files.exists(destinationPath)) {
-            try {
-                return Files.size(destinationPath);
-            } catch (IOException e) {
-                return 0;
-            }
-        }
-        return 0;
-    }
-
-    public void download() throws IOException {
-        downloadedBytes = getResumePosition();
-
-        while (downloadedBytes < totalSize) {
-            try {
-                downloadChunk();
-            } catch (IOException e) {
-                handleDownloadError(e);
-            }
-        }
-
-        verifyDownload();
-    }
-
-    private void downloadChunk() throws IOException {
-        HttpURLConnection conn = (HttpURLConnection) new URL(downloadUrl).openConnection();
+    private void downloadChunk(URI contentFileUrl, OutputStream destination) throws IOException {
+        HttpURLConnection conn = (HttpURLConnection) contentFileUrl.toURL().openConnection();
+        conn.setConnectTimeout((int) config.getConnectTimeout().toMillis());
+        conn.setReadTimeout((int) config.getReadTimeout().toMillis());
 
         if (supportsRangeRequests) {
-            long endByte = Math.min(downloadedBytes + CHUNK_SIZE - 1, totalSize - 1);
+            long endByte = Math.min(downloadedBytes + config.getChunkSize() - 1, totalSize - 1);
             conn.setRequestProperty("Range", String.format("bytes=%d-%d", downloadedBytes, endByte));
+            LOGGER.debug("Downloading chunk: {} to {}", downloadedBytes, endByte);
         }
 
-        try (InputStream in = conn.getInputStream();
-             RandomAccessFile file = new RandomAccessFile(destinationPath.toFile(), "rw")) {
-
-            file.seek(downloadedBytes);
-            byte[] buffer = new byte[8192];
+        try (InputStream in = conn.getInputStream()) {
+            byte[] buffer = new byte[config.getBufferSize()];
             int bytesRead;
+            long chunkBytesRead = 0;
 
             while ((bytesRead = in.read(buffer)) != -1) {
-                file.write(buffer, 0, bytesRead);
+                destination.write(buffer, 0, bytesRead);
                 downloadedBytes += bytesRead;
+                chunkBytesRead += bytesRead;
+
+                if (chunkBytesRead >= config.getChunkSize()) {
+                    break;
+                }
             }
         }
     }
 
-    private void handleDownloadError(IOException e) throws IOException {
+    private void handleDownloadError(IOException e, URI contentFileUrl, OutputStream destination) throws IOException {
         int retryCount = 0;
-        while (retryCount < MAX_RETRIES) {
+        while (retryCount < config.getMaxRetries()) {
             try {
-                Thread.sleep(RETRY_DELAY_MS);
-                downloadChunk();
+                LOGGER.warn("Download error, retrying ({}/{}): {}",
+                        retryCount + 1, config.getMaxRetries(), e.getMessage());
+                Thread.sleep(config.getRetryDelay().toMillis());
+                downloadChunk(contentFileUrl, destination);
                 return;
             } catch (IOException | InterruptedException retryException) {
                 retryCount++;
+                if (retryCount == config.getMaxRetries()) {
+                    throw new IOException("Download failed after " + retryCount + " retries", e);
+                }
             }
         }
-        throw new IOException("Download failed after multiple retries", e);
     }
 
-    private void verifyDownload() throws IOException {
-        String actualHash = calculateFileHash(destinationPath);
-        if (!expectedHash.equals(actualHash)) {
-            throw new IOException("Download verification failed: Hash mismatch");
+    private String calculateMd5(byte[] data) throws IOException {
+        try {
+            MessageDigest digest = MessageDigest.getInstance("MD5");
+            byte[] hash = digest.digest(data);
+            return Base64.getEncoder().encodeToString(hash);
+        } catch (NoSuchAlgorithmException e) {
+            throw new IOException("MD5 calculation failed", e);
         }
     }
 
-    private String calculateFileHash(Path file) throws IOException {
-        try {
-            MessageDigest digest = MessageDigest.getInstance("SHA-256");
-            byte[] hash = digest.digest(Files.readAllBytes(file));
-            return Base64.getEncoder().encodeToString(hash);
-        } catch (NoSuchAlgorithmException e) {
-            throw new IOException("Hash calculation failed", e);
+    // Helper class to write to multiple output streams simultaneously
+    private static class MultiOutputStream extends OutputStream {
+        private final OutputStream[] outputs;
+
+        public MultiOutputStream(OutputStream... outputs) {
+            this.outputs = outputs;
+        }
+
+        @Override
+        public void write(int b) throws IOException {
+            for (OutputStream output : outputs) {
+                output.write(b);
+            }
+        }
+
+        @Override
+        public void write(byte[] b, int off, int len) throws IOException {
+            for (OutputStream output : outputs) {
+                output.write(b, off, len);
+            }
+        }
+
+        @Override
+        public void flush() throws IOException {
+            for (OutputStream output : outputs) {
+                output.flush();
+            }
+        }
+
+        @Override
+        public void close() throws IOException {
+            for (OutputStream output : outputs) {
+                output.close();
+            }
         }
     }
 }

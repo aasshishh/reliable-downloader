@@ -21,6 +21,8 @@ dependencies {
 
     // Testing
     testImplementation 'org.junit.jupiter:junit-jupiter:5.9.2'
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.10.0'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.10.0'
     testImplementation 'org.mockito:mockito-core:5.11.0'
     testImplementation 'org.mockito:mockito-junit-jupiter:5.11.0'
     testImplementation 'com.squareup.okhttp3:mockwebserver:4.12.0'
@@ -35,6 +37,14 @@ java {
     }
 }
 
+compileJava {
+    options.compilerArgs += '--enable-preview'
+}
+
+compileTestJava {
+    options.compilerArgs += '--enable-preview'
+}
+
 test {
     useJUnitPlatform()
     jvmArgs = [
@@ -42,6 +52,19 @@ test {
         '--add-opens', 'java.base/java.time=ALL-UNNAMED',
         '--add-opens', 'java.base/java.net=ALL-UNNAMED',
         '--add-opens', 'java.base/java.net.http=ALL-UNNAMED',
-        '--add-exports', 'java.base/java.net.http=ALL-UNNAMED'
+        '--add-exports', 'java.base/java.net.http=ALL-UNNAMED',
+        '--enable-preview'
     ]
+}
+
+tasks.withType(JavaCompile) {
+    options.compilerArgs += "--add-opens=java.base/java.net.http=ALL-UNNAMED"
+}
+
+tasks.withType(Test) {
+    jvmArgs += "--add-opens=java.base/java.net.http=ALL-UNNAMED"
+    jvmArgs += "--add-opens=java.base/jdk.internal.reflect=ALL-UNNAMED" // Sometimes also needed for reflection
+}
+application {
+    applicationDefaultJvmArgs = ['--enable-preview']
 }

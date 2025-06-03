@@ -1,5 +1,6 @@
 package com.accurx.reliabledownloader.core;
 
+import com.accurx.reliabledownloader.util.DownloadProgressObserver;
 import com.accurx.reliabledownloader.util.Md5;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -8,6 +9,8 @@ import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 
 public class FileDownloadCommand {
@@ -50,6 +53,15 @@ public class FileDownloadCommand {
             }
         } else {
             LOGGER.warn("MD5 hash is not present, download integrity was not verified.");
+        }
+    }
+
+    public void addObserver(DownloadProgressObserver observer) {
+        // Cast to AbstractDownloader to access addObserver method
+        if (fileDownloader instanceof AbstractDownloader) {
+            ((AbstractDownloader) fileDownloader).addObserver(observer);
+        } else {
+            LOGGER.warn("FileDownloader implementation does not support adding observers directly.");
         }
     }
 }
