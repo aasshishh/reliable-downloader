@@ -1,8 +1,7 @@
 # Questions
 
 ## How did you approach solving the problem?
-
-If you used AI assistance we'd love to see examples of your prompts...
+1. First Question I asked was following after cloning the project. `For context, I am coming from Cpp background. Help me setup this project and run it.`
 
 ## How did you verify your solution works correctly?
 
