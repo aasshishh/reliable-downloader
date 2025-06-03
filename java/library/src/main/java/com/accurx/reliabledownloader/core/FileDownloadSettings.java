@@ -1,4 +1,4 @@
-package com.accurx.reliabledownloader;
+package com.accurx.reliabledownloader.core;
 
 import java.net.URI;
 import java.nio.file.Path;

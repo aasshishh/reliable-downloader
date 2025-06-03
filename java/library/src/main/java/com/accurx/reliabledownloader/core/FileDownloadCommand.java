@@ -1,7 +1,6 @@
-package com.accurx.reliabledownloader.runner;
+package com.accurx.reliabledownloader.core;
 
-import com.accurx.reliabledownloader.FileDownloadSettings;
-import com.accurx.reliabledownloader.FileDownloader;
+import com.accurx.reliabledownloader.util.Md5;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

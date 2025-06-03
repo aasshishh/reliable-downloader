@@ -1,12 +1,11 @@
 
 package com.accurx.reliabledownloader;
 
+import com.accurx.reliabledownloader.impl.ReliableDownloader;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 import java.nio.file.Path;
-import java.security.MessageDigest;
-import java.util.Base64;
 
 import static org.junit.jupiter.api.Assertions.*;
 

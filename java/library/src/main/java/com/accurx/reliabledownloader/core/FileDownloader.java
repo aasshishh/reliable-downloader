@@ -1,4 +1,4 @@
-package com.accurx.reliabledownloader;
+package com.accurx.reliabledownloader.core;
 
 import java.io.OutputStream;
 import java.net.URI;

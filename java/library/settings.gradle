@@ -1,1 +1,3 @@
 rootProject.name = 'reliabledownloader'
+include 'library'
+include 'runner'

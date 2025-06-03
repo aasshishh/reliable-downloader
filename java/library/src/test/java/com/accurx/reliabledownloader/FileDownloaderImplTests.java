@@ -1,5 +1,6 @@
 package com.accurx.reliabledownloader;
 
+import com.accurx.reliabledownloader.impl.FileDownloaderImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -20,8 +21,6 @@ import java.util.concurrent.CompletableFuture;
 import javax.net.ssl.SSLSession;
 import java.net.URI;
 import java.net.http.HttpClient;
-import java.net.http.HttpClient.Builder;
-import java.net.http.HttpClient.Redirect;
 import java.net.http.HttpClient.Version;
 import java.net.http.HttpHeaders;
 import java.net.http.HttpRequest;

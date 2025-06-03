@@ -1,5 +1,5 @@
 
-package com.accurx.reliabledownloader;
+package com.accurx.reliabledownloader.impl;
 
 import java.io.IOException;
 import java.io.InputStream;

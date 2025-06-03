@@ -1,4 +1,4 @@
-package com.accurx.reliabledownloader.runner;
+package com.accurx.reliabledownloader.util;
 
 import com.google.common.hash.Hashing;
 import com.google.common.io.BaseEncoding;
@@ -12,7 +12,7 @@ public class Md5 {
     public static String contentMd5(File file) throws IOException
     {
         return BaseEncoding.base64().encode(
-            Files.asByteSource(file).hash(Hashing.md5()).asBytes()
+                Files.asByteSource(file).hash(Hashing.md5()).asBytes()
         );
     }
 }
