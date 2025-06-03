@@ -8,7 +8,12 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-      - name: Set up JDK 24
+      - name: Set up JDK 17 for Gradle runtime
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+      - name: Set up JDK 24 for Java toolchain
         uses: actions/setup-java@v4
         with:
           java-version: '24'
@@ -21,3 +26,5 @@ jobs:
         with:
           arguments: test
           build-root-directory: java
+        env:
+          JAVA_HOME: ${{ env.JAVA_HOME_17_X64 }}
