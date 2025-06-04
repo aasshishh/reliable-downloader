@@ -10,12 +10,12 @@ public class ConsoleProgressObserver implements DownloadProgressObserver {
     @Override
     public void onProgressUpdate(long bytesDownloaded, long totalBytes) {
         double progress = (double) bytesDownloaded / totalBytes * 100;
-        logger.info("{}%", String.format("%.2f", progress));
+        System.out.print(String.format("\rDownload progress: %.2f%%", progress));
     }
 
     @Override
     public void onComplete() {
-        logger.info("Download completed");
+        System.out.println("\nDownload completed"); // New line after completion
     }
 
     @Override
@@ -23,4 +23,3 @@ public class ConsoleProgressObserver implements DownloadProgressObserver {
         logger.error("Download error: {}", e.getMessage());
     }
 }
-

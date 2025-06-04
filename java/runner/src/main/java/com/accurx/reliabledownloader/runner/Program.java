@@ -14,7 +14,8 @@ public class Program {
     private static final Logger logger = LoggerFactory.getLogger(Program.class);
 
     private static final FileDownloadSettings DEFAULT_SETTINGS = new FileDownloadSettings(
-            URI.create("https://installer.accurx.com/chain/4.22.50587.0/accuRx.Installer.Local.msi"),
+            // URI.create("https://installer.accurx.com/chain/4.22.50587.0/accuRx.Installer.Local.msi"),
+            URI.create("https://download.oracle.com/java/24/latest/jdk-24_windows-x64_bin.msi"),
             Path.of("./downloads/myfirstdownload.msi"),
             // "HTTPClientFileDownloader"
             "ReliableDownloader"
