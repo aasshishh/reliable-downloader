@@ -9,7 +9,7 @@ import java.io.OutputStream;
 import java.net.URI;
 import java.util.Optional;
 
-public class ProgressTrackingDownloader implements FileDownloader, DownloadProgressObserver { // Implement DownloadProgressObserver
+public class ProgressTrackingDownloader implements FileDownloader, DownloadProgressObserver {
     private final FileDownloader delegate;
     private final DownloadProgressObserver externalProgressObserver;
 
@@ -23,7 +23,7 @@ public class ProgressTrackingDownloader implements FileDownloader, DownloadProgr
     @Override
     public Optional<String> downloadFile(URI source, OutputStream destination, long startOffset) throws Exception {
         // The initial 0% update is good for immediate feedback
-        externalProgressObserver.onProgressUpdate(startOffset, 100); // Pass startOffset as initial downloaded bytes
+        externalProgressObserver.onProgressUpdate(startOffset, 100);
 
         try {
             Optional<String> result = delegate.downloadFile(source, destination, startOffset);

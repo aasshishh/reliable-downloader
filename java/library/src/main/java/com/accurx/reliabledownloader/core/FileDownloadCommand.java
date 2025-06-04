@@ -51,7 +51,8 @@ public class FileDownloadCommand {
                     Files.deleteIfExists(tempFilePath); // Clean up the incomplete file
                     currentAttempt++;
                 } else {
-                    LOGGER.error("Download failed after retrying. Server does not support range requests: {}", e.getMessage(), e);
+                    LOGGER.error("Download failed after retrying. Server does not support range requests: {}",
+                            e.getMessage(), e);
                     throw e;
                 }
             } catch (Exception e) { // Catch any other download-related exceptions
@@ -121,7 +122,6 @@ public class FileDownloadCommand {
             md5Verified = true; // Consider it verified if no MD5 provided
         }
 
-        // If MD5 is verified (or not applicable), rename the temporary file to the final destination
         if (md5Verified) {
             LOGGER.info("Download complete. Attempting to move temporary file {} to final destination {}.",
                     tempFilePath.getFileName(), destinationFilePath.getFileName());
@@ -134,8 +134,12 @@ public class FileDownloadCommand {
                 LOGGER.info("File moved successfully. Download Complete!");
             } catch (IOException moveException) {
                 LOGGER.error("Failed to move temporary file {} to final destination {}: {}",
-                        tempFilePath.getFileName(), destinationFilePath.getFileName(), moveException.getMessage(), moveException);
-                throw new IOException("Failed to finalize download: Could not move temporary file to destination.", moveException);
+                        tempFilePath.getFileName(),
+                        destinationFilePath.getFileName(),
+                        moveException.getMessage(),
+                        moveException);
+                throw new IOException(
+                        "Failed to finalize download: Could not move temporary file to destination.", moveException);
             }
         } else {
             LOGGER.error("Download did not complete successfully. Temporary file {} might remain or was deleted.",

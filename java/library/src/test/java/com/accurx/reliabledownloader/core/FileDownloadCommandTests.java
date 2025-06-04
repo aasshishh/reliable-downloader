@@ -47,8 +47,8 @@ class FileDownloadCommandTests {
 
         downloadSettings = new FileDownloadSettings(
                 URI.create("http://example.com/testfile.txt"),
-                destinationFilePath, // Use the actual destination path for settings
-                "ReliableDownloader"
+                destinationFilePath,
+                true
         );
         command = new FileDownloadCommand(mockFileDownloader, downloadSettings);
     }
@@ -58,11 +58,10 @@ class FileDownloadCommandTests {
     void run_successfulDownloadWithMatchingMd5_verifiesIntegrity() throws Exception {
         String expectedMd5 = "someBase64Md5";
         byte[] testContent = "test content".getBytes();
-        Path expectedTempFilePath = Path.of(destinationFilePath.toString() + ".tmp"); // The temp path FileDownloadCommand will use
+        Path expectedTempFilePath = Path.of(destinationFilePath.toString() + ".tmp");
 
-        when(mockFileDownloader.downloadFile(any(URI.class), any(OutputStream.class), anyLong())) // Added anyLong()
+        when(mockFileDownloader.downloadFile(any(URI.class), any(OutputStream.class), anyLong()))
                 .thenAnswer(invocation -> {
-                    // Get the OutputStream that FileDownloadCommand provides (which will be for the .tmp file)
                     OutputStream os = invocation.getArgument(1);
                     os.write(testContent);
                     os.flush(); // Ensure content is written
@@ -76,7 +75,8 @@ class FileDownloadCommandTests {
             command.run();
 
             // Verify that downloadFile was called with the correct arguments
-            verify(mockFileDownloader).downloadFile(eq(downloadSettings.sourceUrl()), any(OutputStream.class), eq(0L)); // Verify initial offset
+            verify(mockFileDownloader)
+                    .downloadFile(eq(downloadSettings.sourceUrl()), any(OutputStream.class), eq(0L));
             // Verify that the final file exists and is correctly named
             assertTrue(Files.exists(destinationFilePath));
             assertFalse(Files.exists(expectedTempFilePath)); // Temp file should be deleted
@@ -104,7 +104,6 @@ class FileDownloadCommandTests {
         assertTrue(Files.exists(destinationFilePath));
         assertFalse(Files.exists(expectedTempFilePath));
         assertEquals(testContent.length, Files.size(destinationFilePath));
-        // In a real test, you'd verify log messages here, but for now, we'll assume it logs a warning.
     }
 
 
@@ -116,7 +115,7 @@ class FileDownloadCommandTests {
         byte[] testContent = "test content for mismatch".getBytes();
         Path expectedTempFilePath = Path.of(destinationFilePath.toString() + ".tmp");
 
-        when(mockFileDownloader.downloadFile(any(URI.class), any(OutputStream.class), anyLong())) // Added anyLong()
+        when(mockFileDownloader.downloadFile(any(URI.class), any(OutputStream.class), anyLong()))
                 .thenAnswer(invocation -> {
                     OutputStream os = invocation.getArgument(1);
                     os.write(testContent);
@@ -147,7 +146,7 @@ class FileDownloadCommandTests {
         assertTrue(Files.exists(expectedTempFilePath));
 
         // Configure mockFileDownloader to throw an exception
-        when(mockFileDownloader.downloadFile(any(URI.class), any(OutputStream.class), anyLong())) // Added anyLong()
+        when(mockFileDownloader.downloadFile(any(URI.class), any(OutputStream.class), anyLong()))
                 .thenThrow(new IOException("Simulated download error"));
 
         IOException thrown = assertThrows(IOException.class, () -> command.run());
@@ -168,11 +167,11 @@ class FileDownloadCommandTests {
 
         // Create a mock temporary file with some content
         Files.createFile(tempFile);
-        Files.write(tempFile, new byte[(int) existingFileSize]); // Write some dummy bytes
+        Files.write(tempFile, new byte[(int) existingFileSize]);
         assertEquals(existingFileSize, Files.size(tempFile));
 
 
-        when(mockFileDownloader.downloadFile(any(URI.class), any(OutputStream.class), eq(existingFileSize))) // Verify with expected startOffset
+        when(mockFileDownloader.downloadFile(any(URI.class), any(OutputStream.class), eq(existingFileSize)))
                 .thenAnswer(invocation -> {
                     OutputStream os = invocation.getArgument(1);
                     os.write(additionalContent);
@@ -185,7 +184,8 @@ class FileDownloadCommandTests {
 
             command.run();
 
-            verify(mockFileDownloader).downloadFile(eq(downloadSettings.sourceUrl()), any(OutputStream.class), eq(existingFileSize));
+            verify(mockFileDownloader)
+                    .downloadFile(eq(downloadSettings.sourceUrl()), any(OutputStream.class), eq(existingFileSize));
             assertTrue(Files.exists(destinationFilePath));
             assertFalse(Files.exists(tempFile));
             assertEquals(existingFileSize + additionalContent.length, Files.size(destinationFilePath));
@@ -199,27 +199,24 @@ class FileDownloadCommandTests {
         byte[] testContent = "cleanup fail content".getBytes();
         Path expectedTempFilePath = Path.of(destinationFilePath.toString() + ".tmp");
 
-        when(mockFileDownloader.downloadFile(any(URI.class), any(OutputStream.class), anyLong())) // Added anyLong()
+        when(mockFileDownloader.downloadFile(any(URI.class), any(OutputStream.class), anyLong()))
                 .thenThrow(new IOException("Simulated download error for cleanup test"));
 
-        // Use a spy on Files.class to mock deleteIfExists but allow other methods to be real
         try (MockedStatic<Files> mockedFiles = mockStatic(Files.class, CALLS_REAL_METHODS)) {
             // Ensure temp file exists for the delete attempt
             Files.createFile(expectedTempFilePath);
             assertTrue(Files.exists(expectedTempFilePath));
 
-            // Mock deleteIfExists to throw an exception
             mockedFiles.when(() -> Files.deleteIfExists(eq(expectedTempFilePath)))
                     .thenThrow(new IOException("Simulated cleanup error"));
 
             IOException thrown = assertThrows(IOException.class, () -> command.run());
 
             assertEquals("Simulated download error for cleanup test", thrown.getMessage());
-            verify(mockFileDownloader).downloadFile(eq(downloadSettings.sourceUrl()), any(OutputStream.class), eq(0L));
-            // Crucially, the temp file should still exist if cleanup failed
+            verify(mockFileDownloader)
+                    .downloadFile(eq(downloadSettings.sourceUrl()), any(OutputStream.class), eq(0L));
             assertTrue(Files.exists(expectedTempFilePath));
             assertFalse(Files.exists(destinationFilePath)); // Final destination should not exist
-            // In a real test, you'd verify log messages for the cleanup error
         }
     }
 }

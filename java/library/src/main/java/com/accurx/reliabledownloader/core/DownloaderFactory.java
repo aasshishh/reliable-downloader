@@ -12,7 +12,7 @@ public class DownloaderFactory {
     private static final Logger LOGGER = LoggerFactory.getLogger(DownloaderFactory.class);
 
     public FileDownloader createDownloader(DownloaderConfig config, FileDownloadSettings settings) {
-        if (settings.downloader().equals("ReliableDownloader")) {
+        if (settings.reliableDownloader()) {
             LOGGER.info("Using reliable downloader");
             return createReliableDownloader(config);
         }

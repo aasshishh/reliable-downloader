@@ -3,9 +3,7 @@ package com.accurx.reliabledownloader;
 import com.accurx.reliabledownloader.core.*;
 import com.accurx.reliabledownloader.mocks.FakeCdn;
 import com.accurx.reliabledownloader.util.Md5;
-import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.RecordedRequest;
-import okhttp3.mockwebserver.SocketPolicy;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -18,10 +16,7 @@ import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -36,14 +31,9 @@ class ReliableDownloaderTests {
 
     private static final String TEST_FILE_NAME = "sample.txt";
     private static final String TEST_CONTENT = "This is a test file content for downloading purposes. It has some length.";
-    private static final String SMALL_TEST_CONTENT = "small";
 
     @BeforeEach
     void setup() throws Exception {
-        // Initialize FakeCdn but defer starting it until needed for specific test scenarios
-        // For scenarios where the CDN needs specific behavior, it will be setup within the test method
-        // to control the dispatcher or responses.
-
         // Default downloader setup for most tests
         DownloaderConfig.Builder configBuilder = new DownloaderConfig.Builder()
                 .maxRetries(1)
@@ -77,7 +67,7 @@ class ReliableDownloaderTests {
     void downloadSuccessFromRangeSupportedServer() throws Exception {
         setupFakeCdn(TEST_FILE_NAME, TEST_CONTENT);
         URI downloadUri = fakeCdn.getAcceptRangesUri();
-        FileDownloadSettings settings = new FileDownloadSettings(downloadUri, destinationFilePath, "downloader-accept-range");
+        FileDownloadSettings settings = new FileDownloadSettings(downloadUri, destinationFilePath, true);
         FileDownloadCommand command = new FileDownloadCommand(downloader, settings);
 
         command.run();
@@ -92,7 +82,7 @@ class ReliableDownloaderTests {
     void downloadSuccessFromNoRangeSupportedServer() throws Exception {
         setupFakeCdn(TEST_FILE_NAME, TEST_CONTENT);
         URI downloadUri = fakeCdn.getNoRangeUri();
-        FileDownloadSettings settings = new FileDownloadSettings(downloadUri, destinationFilePath, "downloader-no-range");
+        FileDownloadSettings settings = new FileDownloadSettings(downloadUri, destinationFilePath, true);
         FileDownloadCommand command = new FileDownloadCommand(downloader, settings);
 
         command.run();
@@ -107,7 +97,7 @@ class ReliableDownloaderTests {
     void resumeDownloadSuccessWhenServerSupportsRanges() throws Exception {
         setupFakeCdn(TEST_FILE_NAME, TEST_CONTENT);
         URI downloadUri = fakeCdn.getAcceptRangesUri();
-        FileDownloadSettings settings = new FileDownloadSettings(downloadUri, destinationFilePath, "downloader-resume");
+        FileDownloadSettings settings = new FileDownloadSettings(downloadUri, destinationFilePath, true);
         FileDownloadCommand command = new FileDownloadCommand(downloader, settings);
 
         Path tempFile = Path.of(destinationFilePath.toString() + ".tmp");
@@ -147,7 +137,7 @@ class ReliableDownloaderTests {
         // Since we can't override the dispatcher's hash easily, let's test with
         // file content that would naturally cause an MD5 mismatch by tampering with the file
         URI downloadUri = fakeCdn.getAcceptRangesUri();
-        FileDownloadSettings settings = new FileDownloadSettings(downloadUri, destinationFilePath, "downloader-bad-md5");
+        FileDownloadSettings settings = new FileDownloadSettings(downloadUri, destinationFilePath, true);
         FileDownloadCommand command = new FileDownloadCommand(downloader, settings);
 
         // First download the file normally
@@ -170,7 +160,7 @@ class ReliableDownloaderTests {
     void downloadEmptyFile() throws Exception {
         setupFakeCdn("empty.txt", ""); // Empty content
         URI downloadUri = fakeCdn.getAcceptRangesUri();
-        FileDownloadSettings settings = new FileDownloadSettings(downloadUri, destinationFilePath, "downloader-empty");
+        FileDownloadSettings settings = new FileDownloadSettings(downloadUri, destinationFilePath, true);
         FileDownloadCommand command = new FileDownloadCommand(downloader, settings);
 
         command.run();
@@ -196,7 +186,7 @@ class ReliableDownloaderTests {
         fakeCdn.beforeAll(null);
 
         URI downloadUri = fakeCdn.getAcceptRangesUri();
-        FileDownloadSettings settings = new FileDownloadSettings(downloadUri, destinationFilePath, "downloader-connection-error");
+        FileDownloadSettings settings = new FileDownloadSettings(downloadUri, destinationFilePath, true);
         FileDownloadCommand command = new FileDownloadCommand(downloader, settings);
 
         // Test normal download since we can't easily simulate connection errors with the current setup
@@ -222,17 +212,20 @@ class ReliableDownloaderTests {
         fakeCdn.beforeAll(null);
 
         URI downloadUri = fakeCdn.getAcceptRangesUri();
-        FileDownloadSettings settings = new FileDownloadSettings(downloadUri, destinationFilePath, "downloader-max-retries-fail");
+        FileDownloadSettings settings = new FileDownloadSettings(downloadUri, destinationFilePath, true);
         FileDownloadCommand command = new FileDownloadCommand(downloader, settings);
 
         // Test with an invalid URI to simulate connection error
         URI invalidUri = URI.create("http://invalid-host-that-does-not-exist:12345/test");
-        FileDownloadSettings invalidSettings = new FileDownloadSettings(invalidUri, destinationFilePath, "downloader-max-retries-fail");
+        FileDownloadSettings invalidSettings = new FileDownloadSettings(invalidUri, destinationFilePath, true);
         FileDownloadCommand invalidCommand = new FileDownloadCommand(downloader, invalidSettings);
 
         IOException thrown = assertThrows(IOException.class, invalidCommand::run);
 
-        assertTrue(thrown.getMessage().contains("Failed to") || thrown.getMessage().contains("Connection") || thrown.getMessage().contains("Unknown") || thrown.getMessage().contains("Download failed after"));
+        assertTrue(thrown.getMessage().contains("Failed to") ||
+                thrown.getMessage().contains("Connection")
+                || thrown.getMessage().contains("Unknown")
+                || thrown.getMessage().contains("Download failed after"));
         assertFalse(Files.exists(destinationFilePath));
         assertFalse(Files.exists(Path.of(destinationFilePath.toString() + ".tmp")));
     }
@@ -252,7 +245,7 @@ class ReliableDownloaderTests {
 
         // Use a path that doesn't match the FakeCdn's expected paths
         URI downloadUri = fakeCdn.getServer().url("/nonexistent-path/file.txt").uri();
-        FileDownloadSettings settings = new FileDownloadSettings(downloadUri, destinationFilePath, "downloader-404");
+        FileDownloadSettings settings = new FileDownloadSettings(downloadUri, destinationFilePath, true);
         FileDownloadCommand command = new FileDownloadCommand(downloader, settings);
 
         FileNotFoundException thrown = assertThrows(FileNotFoundException.class, command::run);
@@ -278,7 +271,7 @@ class ReliableDownloaderTests {
 
         // Use a path that doesn't match the FakeCdn's expected paths to trigger an exception
         URI downloadUri = fakeCdn.getServer().url("/invalid-server-error-path/file.txt").uri();
-        FileDownloadSettings settings = new FileDownloadSettings(downloadUri, destinationFilePath, "downloader-500");
+        FileDownloadSettings settings = new FileDownloadSettings(downloadUri, destinationFilePath, true);
         FileDownloadCommand command = new FileDownloadCommand(downloader, settings);
 
         IOException thrown = assertThrows(IOException.class, command::run);

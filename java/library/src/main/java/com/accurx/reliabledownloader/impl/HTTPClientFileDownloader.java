@@ -29,7 +29,7 @@ public class HTTPClientFileDownloader extends AbstractDownloader implements File
      */
     @Deprecated
     public HTTPClientFileDownloader(HttpClient.Builder httpClientBuilder) {
-        this(() -> httpClientBuilder.build());
+        this(httpClientBuilder::build);
     }
     
     /**

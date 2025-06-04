@@ -55,7 +55,7 @@ class HTTPClientFileDownloaderTests {
         // Create the downloader and spy on it
         HTTPClientFileDownloader downloader = new HTTPClientFileDownloader(() -> mockHttpClient);
         spyDownloader = spy(downloader);
-        spyDownloader.addObserver(mockObserver); // Add the mock observer
+        spyDownloader.addObserver(mockObserver);
         testUri = URI.create("http://example.com/testfile.txt");
     }
 
@@ -74,22 +74,18 @@ class HTTPClientFileDownloaderTests {
                 .thenReturn(mockGetResponse);
         when(mockGetResponse.statusCode()).thenReturn(200);
         when(mockGetResponse.headers()).thenReturn(HttpHeaders.of(
-                Map.of("Content-Length", List.of(String.valueOf(fileContent.length()))), (a, b) -> true));
+                Map.of("Content-Length",
+                        List.of(String.valueOf(fileContent.length()))), (a, b) -> true));
         when(mockGetResponse.body()).thenReturn(new ByteArrayInputStream(fileContent.getBytes()));
 
         ByteArrayOutputStream destination = new ByteArrayOutputStream();
-        spyDownloader.downloadFile(testUri, destination, 0); // Call downloadFile, which calls beforeDownload/afterDownload
+        spyDownloader.downloadFile(testUri, destination, 0);
 
-        // Since beforeDownload and afterDownload are protected, we verify the overall behavior
-        // that downloadFile was successful (which means hooks were called)
         assertEquals(fileContent, destination.toString());
-        // downloadFile() calls notify complete after performDownload(), and performDownload() also calls it
-        // So we expect it to be called at least once
         verify(mockObserver, atLeastOnce()).onComplete();
         verify(mockObserver, never()).onError(any(Exception.class));
     }
 
-    // ... rest of the tests, replace 'downloader' with 'spyDownloader'
     @Test
     @DisplayName("should successfully download a file and return MD5 if provided")
     void performDownload_success_returnsMd5() throws Exception {
@@ -100,7 +96,9 @@ class HTTPClientFileDownloaderTests {
         when(mockHttpClient.send(any(HttpRequest.class), eq(HttpResponse.BodyHandlers.discarding())))
                 .thenReturn(mockHeadResponse);
         when(mockHeadResponse.statusCode()).thenReturn(200);
-        when(mockHeadResponse.headers()).thenReturn(HttpHeaders.of(Map.of("Accept-Ranges", List.of("bytes")), (a, b) -> true));
+        when(mockHeadResponse.headers())
+                .thenReturn(
+                        HttpHeaders.of(Map.of("Accept-Ranges", List.of("bytes")), (a, b) -> true));
 
         // Mock GET response
         when(mockHttpClient.send(any(HttpRequest.class), eq(HttpResponse.BodyHandlers.ofInputStream())))
@@ -119,7 +117,8 @@ class HTTPClientFileDownloaderTests {
         assertEquals(fileContent, destination.toString());
 
         // Verify observer notifications
-        verify(mockObserver, atLeastOnce()).onProgressUpdate(bytesDownloadedCaptor.capture(), totalBytesCaptor.capture());
+        verify(mockObserver, atLeastOnce())
+                .onProgressUpdate(bytesDownloadedCaptor.capture(), totalBytesCaptor.capture());
         assertTrue(bytesDownloadedCaptor.getValue() > 0);
         assertEquals(fileContent.length(), totalBytesCaptor.getValue());
         verify(mockObserver).onComplete();
@@ -138,44 +137,39 @@ class HTTPClientFileDownloaderTests {
         when(mockHttpClient.send(any(HttpRequest.class), eq(HttpResponse.BodyHandlers.discarding())))
                 .thenReturn(mockHeadResponse);
         when(mockHeadResponse.statusCode()).thenReturn(200);
-        when(mockHeadResponse.headers()).thenReturn(HttpHeaders.of(Map.of(), (a, b) -> true)); // No Accept-Ranges
+        when(mockHeadResponse.headers()).thenReturn(HttpHeaders.of(Map.of(), (a, b) -> true));
 
         // Mock GET response
         when(mockHttpClient.send(any(HttpRequest.class), eq(HttpResponse.BodyHandlers.ofInputStream())))
                 .thenReturn(mockGetResponse);
         when(mockGetResponse.statusCode()).thenReturn(200);
         when(mockGetResponse.headers()).thenReturn(HttpHeaders.of(
-                Map.of("Content-Length", List.of(String.valueOf(fileContent.length()))), (a, b) -> true));
+                Map.of("Content-Length",
+                        List.of(String.valueOf(fileContent.length()))), (a, b) -> true));
         when(mockGetResponse.body()).thenReturn(new ByteArrayInputStream(fileContent.getBytes()));
 
         ByteArrayOutputStream destination = new ByteArrayOutputStream();
         spyDownloader.performDownload(testUri, destination, 0); // Use spyDownloader
 
-        // No explicit assert for range support as it's internal logging,
-        // but we've tested the path where it's not supported.
         assertEquals(fileContent, destination.toString());
     }
 
     @Test
     @DisplayName("should throw IOException if HEAD request fails")
     void performDownload_headRequestFails_throwsIOException() throws Exception {
-        // Set up mock HEAD response to return 500
         when(mockHttpClient.send(any(HttpRequest.class), eq(HttpResponse.BodyHandlers.discarding())))
                 .thenReturn(mockHeadResponse);
         when(mockHeadResponse.statusCode()).thenReturn(500); // Simulate server error
 
         ByteArrayOutputStream destination = new ByteArrayOutputStream();
 
-        // Expect an IOException due to the 500 status code
-        IOException thrown = assertThrows(IOException.class, () -> spyDownloader.performDownload(testUri, destination, 0));
+        IOException thrown =
+                assertThrows(IOException.class, () -> spyDownloader.performDownload(testUri, destination, 0));
         assertTrue(thrown.getMessage().contains("HEAD request failed with status code: 500"));
 
-        // performDownload() doesn't notify observers directly, that's done in downloadFile()
-        // So we don't verify observer notifications here
-
-        // Verify that HEAD request was made
-        verify(mockHttpClient).send(argThat(req -> req.method().equals("HEAD")), eq(HttpResponse.BodyHandlers.discarding()));
-        // Verify GET request was NOT made
+        verify(mockHttpClient)
+                .send(argThat(req -> req.method().equals("HEAD")),
+                        eq(HttpResponse.BodyHandlers.discarding()));
         verify(mockHttpClient, never()).send(argThat(req -> req.method().equals("GET")), any());
     }
 
@@ -196,15 +190,15 @@ class HTTPClientFileDownloaderTests {
         ByteArrayOutputStream destination = new ByteArrayOutputStream();
 
         // Expect an IOException due to the 500 status code
-        IOException thrown = assertThrows(IOException.class, () -> spyDownloader.performDownload(testUri, destination, 0));
+        IOException thrown = assertThrows(
+                IOException.class, () -> spyDownloader.performDownload(testUri, destination, 0));
         assertTrue(thrown.getMessage().contains("GET request failed with status code: 500"));
 
-        // performDownload() doesn't notify observers directly, that's done in downloadFile()
-        // So we don't verify observer notifications here
-
         // Verify that HEAD and GET requests were made
-        verify(mockHttpClient).send(argThat(req -> req.method().equals("HEAD")), eq(HttpResponse.BodyHandlers.discarding()));
-        verify(mockHttpClient).send(argThat(req -> req.method().equals("GET")), eq(HttpResponse.BodyHandlers.ofInputStream()));
+        verify(mockHttpClient).send(
+                argThat(req -> req.method().equals("HEAD")), eq(HttpResponse.BodyHandlers.discarding()));
+        verify(mockHttpClient).send(
+                argThat(req -> req.method().equals("GET")), eq(HttpResponse.BodyHandlers.ofInputStream()));
     }
 
     @Test
@@ -216,14 +210,11 @@ class HTTPClientFileDownloaderTests {
 
         ByteArrayOutputStream destination = new ByteArrayOutputStream();
 
-        IOException thrown = assertThrows(IOException.class, () -> spyDownloader.performDownload(testUri, destination, 0));
+        IOException thrown = assertThrows(
+                IOException.class, () -> spyDownloader.performDownload(testUri, destination, 0));
         assertTrue(thrown.getMessage().contains("Download interrupted"));
         assertTrue(thrown.getCause() instanceof InterruptedException);
 
-        // performDownload() doesn't notify observers directly, that's done in downloadFile()
-        // So we don't verify observer notifications here
-
-        // Verify no completion or progress updates (since the operation failed)
         verify(mockObserver, never()).onComplete();
         verify(mockObserver, never()).onProgressUpdate(any(Long.class), any(Long.class));
     }

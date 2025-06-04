@@ -19,7 +19,10 @@ public abstract class AbstractDownloader implements FileDownloader {
     protected abstract void afterDownload();
 
     // Updated to include startOffset
-    protected abstract Optional<String> performDownload(URI source, OutputStream destination, long startOffset) throws Exception;
+    protected abstract Optional<String> performDownload(
+            URI source,
+            OutputStream destination,
+            long startOffset) throws Exception;
 
     @Override
     public final Optional<String> downloadFile(URI source, OutputStream destination, long startOffset) throws Exception {
@@ -36,7 +39,7 @@ public abstract class AbstractDownloader implements FileDownloader {
             Thread.currentThread().interrupt();
             notifyError(new IOException("Download interrupted", e));
             throw new IOException("Download interrupted", e);
-        } catch (Exception e) { // Catch any other unexpected exceptions
+        } catch (Exception e) {
             LOGGER.error("An unexpected error occurred during download", e);
             notifyError(new IOException("Unexpected error during download", e));
             throw e;

@@ -21,29 +21,10 @@ import java.util.Optional;
 
 public class ReliableDownloader extends AbstractDownloader implements FileDownloader {
     private static final Logger LOGGER = LoggerFactory.getLogger(ReliableDownloader.class);
-
     private final DownloaderConfig config;
 
     public ReliableDownloader(DownloaderConfig config) {
         this.config = config;
-    }
-
-    private static class DownloadInitializationResult {
-        final long totalSize;
-        final boolean supportsRangeRequests;
-
-        DownloadInitializationResult(long totalSize, boolean supportsRangeRequests) {
-            this.totalSize = totalSize;
-            this.supportsRangeRequests = supportsRangeRequests;
-        }
-
-        public long totalSize() {
-            return totalSize;
-        }
-
-        public boolean supportsRangeRequests() {
-            return supportsRangeRequests;
-        }
     }
 
     @Override
@@ -58,9 +39,6 @@ public class ReliableDownloader extends AbstractDownloader implements FileDownlo
 
     @Override
     public Optional<String> performDownload(URI contentFileUrl, OutputStream destination, long startOffset) throws Exception {
-        HttpURLConnection connection = null;
-        Optional<String> downloadedDataMd5 = Optional.empty();
-
         long totalSize = -1; // Overall total size
         boolean supportsRangeRequests = false;
         long currentDownloadedBytes = startOffset; // Initialize with startOffset for resuming
@@ -198,7 +176,8 @@ public class ReliableDownloader extends AbstractDownloader implements FileDownlo
 
 
             if (totalSize == -1) {
-                LOGGER.warn("Could not determine total file size from HEAD request for {}. Attempting partial GET.", contentFileUrl);
+                LOGGER.warn("Could not determine total file size from HEAD request for {}. Attempting partial GET.",
+                        contentFileUrl);
                 HttpURLConnection getConn = null; // Corrected: new connection for GET
                 try {
                     getConn = (HttpURLConnection) contentFileUrl.toURL().openConnection();
@@ -209,7 +188,8 @@ public class ReliableDownloader extends AbstractDownloader implements FileDownlo
                     getConn.setRequestProperty("Range", "bytes=0-0"); // Request just 1 byte
                     getConn.connect();
 
-                    if (getConn.getResponseCode() == HttpURLConnection.HTTP_PARTIAL || getConn.getResponseCode() == HttpURLConnection.HTTP_OK) {
+                    if (getConn.getResponseCode() == HttpURLConnection.HTTP_PARTIAL
+                            || getConn.getResponseCode() == HttpURLConnection.HTTP_OK) {
                         long potentialTotal = getConn.getContentLengthLong();
                         if (potentialTotal != -1) {
                             // If we got a partial content length, it's just for the 1 byte, so not useful here.
@@ -238,7 +218,8 @@ public class ReliableDownloader extends AbstractDownloader implements FileDownlo
             // If resuming, check if the currentOffset is valid against the total size
             if (config.isResumeSupport() && currentOffset > 0) {
                 if (currentOffset > totalSize) {
-                    LOGGER.warn("Local partial file size ({}) is greater than remote total size ({}). Restarting download from 0.", currentOffset, totalSize);
+                    LOGGER.warn("Local partial file size ({}) is greater than remote total size ({}). Restarting download from 0.",
+                            currentOffset, totalSize);
                     currentOffset = 0; // Force restart if local file is larger than remote
                 }
             }
@@ -289,7 +270,8 @@ public class ReliableDownloader extends AbstractDownloader implements FileDownlo
                             "Starting download from the beginning of the stream.", contentFileUrl);
                 } else if (responseCode != HttpURLConnection.HTTP_OK && responseCode != HttpURLConnection.HTTP_PARTIAL) {
                     throw new IOException(
-                            "HTTP error during chunk download: " + responseCode + " " + responseMessage + " for " + contentFileUrl);
+                            "HTTP error during chunk download: " + responseCode +
+                                    " " + responseMessage + " for " + contentFileUrl);
                 }
             }
 
@@ -301,13 +283,9 @@ public class ReliableDownloader extends AbstractDownloader implements FileDownlo
                     destination.write(buffer, 0, bytesRead);
                     bytesReadInChunk += bytesRead; // Accumulate bytes read in this chunk
 
-                    // If we're not supporting ranges, and we read more than a chunk size,
-                    // we might be reading the full file. Break if we've read enough for a chunk.
-                    // Otherwise, continue reading until the stream ends.
                     if (supportsRangeRequests && bytesReadInChunk >= config.getChunkSize()) {
                         break;
                     }
-                    // If not supportsRangeRequests, read until stream ends, and bytesReadInChunk will be the full amount read for this "chunk"
                 }
             }
         } finally {
@@ -359,14 +337,29 @@ public class ReliableDownloader extends AbstractDownloader implements FileDownlo
 
         @Override
         public void close() throws IOException {
-            // It's generally not advisable to close external streams passed in.
-            // MultiOutputStream should not own the lifecycle of `destination` and `md5Buffer`
-            // if they are managed by the caller.
-            // However, the original code had this, so keeping it for consistency,
-            // but noting that `FileDownloadCommand` already handles closing `destination`.
             for (OutputStream output : outputs) {
                 output.close();
             }
+        }
+    }
+
+    // Helper class to hold the result of initializeDownload
+    // Used to avoid passing 3 values around in performDownload
+    private static class DownloadInitializationResult {
+        final long totalSize;
+        final boolean supportsRangeRequests;
+
+        DownloadInitializationResult(long totalSize, boolean supportsRangeRequests) {
+            this.totalSize = totalSize;
+            this.supportsRangeRequests = supportsRangeRequests;
+        }
+
+        public long totalSize() {
+            return totalSize;
+        }
+
+        public boolean supportsRangeRequests() {
+            return supportsRangeRequests;
         }
     }
 }

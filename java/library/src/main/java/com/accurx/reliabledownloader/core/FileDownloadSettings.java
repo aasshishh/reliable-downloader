@@ -6,5 +6,5 @@ import java.nio.file.Path;
 public record FileDownloadSettings(
         URI sourceUrl,
         Path destinationFilePath,
-        String downloader
+        Boolean reliableDownloader
 ) {}

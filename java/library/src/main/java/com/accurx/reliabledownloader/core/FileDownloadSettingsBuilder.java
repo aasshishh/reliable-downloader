@@ -6,7 +6,7 @@ import java.nio.file.Path;
 public class FileDownloadSettingsBuilder {
     private URI sourceUrl;
     private Path destinationPath = Path.of("./downloads/");
-    private String downloader = "ReliableDownloader";
+    private Boolean reliableDownloader = true;
 
     public FileDownloadSettingsBuilder withSource(URI url) {
         this.sourceUrl = url;
@@ -18,12 +18,12 @@ public class FileDownloadSettingsBuilder {
         return this;
     }
 
-    public FileDownloadSettingsBuilder withDownloader(String downloader) {
-        this.downloader = downloader;
+    public FileDownloadSettingsBuilder withReliableDownloader(Boolean reliableDownloader) {
+        this.reliableDownloader = reliableDownloader;
         return this;
     }
 
     public FileDownloadSettings build() {
-        return new FileDownloadSettings(sourceUrl, destinationPath, downloader);
+        return new FileDownloadSettings(sourceUrl, destinationPath, reliableDownloader);
     }
 }
