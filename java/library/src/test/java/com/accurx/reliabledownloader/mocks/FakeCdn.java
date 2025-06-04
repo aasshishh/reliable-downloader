@@ -88,25 +88,37 @@ public class FakeCdn implements BeforeAllCallback, AfterAllCallback {
 
         @Override
         public MockResponse dispatch(RecordedRequest request) {
+            String path = request.getPath();
+            String method = request.getMethod();
+
+            // Handle HEAD requests specifically for non-existent files
+            if (path.equals("/nonexistent-path/file.txt") && "HEAD".equals(method)) {
+                return new MockResponse().setResponseCode(404); // Explicit 404 for HEAD
+            }
+            // Handle GET requests for non-existent files
+            if (path.equals("/nonexistent-path/file.txt") && "GET".equals(method)) {
+                return new MockResponse().setResponseCode(404); // Explicit 404 for GET
+            }
+
+            // Handle HEAD requests specifically for non-existent paths
+            if (path.equals("/invalid-server-error-path/file.txt") && "HEAD".equals(method)) {
+                return new MockResponse().setResponseCode(501); // Explicit 404 for HEAD
+            }
+            // Handle GET requests for non-existent paths (if you uncomment the test)
+            if (path.equals("/invalid-server-error-path/file.txt") && "GET".equals(method)) {
+                return new MockResponse().setResponseCode(501); // Explicit 404 for GET
+            }
 
             MockResponse mockResponse = new MockResponse();
-
-            if (noAcceptRangesPath.equals(request.getPath()))
-            {
+            if (noAcceptRangesPath.equals(request.getPath())) {
                 // Don't add Accept-Ranges header
-            }
-            else if (acceptRangesPath.equals(request.getPath()))
-            {
+            } else if (acceptRangesPath.equals(request.getPath())) {
                 mockResponse.addHeader(ACCEPT_RANGES_HEADER, ACCEPTS_RANGES_BYTES);
-            }
-            else
-            {
+            } else {
                 throw new UnsupportedOperationException("Unsupported request path " + request.getPath());
             }
 
-
-            if ("HEAD".equals(request.getMethod()))
-            {
+            if ("HEAD".equals(request.getMethod())) {
                 String rangeHeader = request.getHeader("Range");
                 if (rangeHeader != null && acceptRangesPath.equals(request.getPath())) {
                     // Handle HEAD request with Range header for resume consistency check
@@ -132,18 +144,13 @@ public class FakeCdn implements BeforeAllCallback, AfterAllCallback {
                     // Normal HEAD request without Range header
                     mockResponse.addHeader(CONTENT_LENGTH, content.getBytes(StandardCharsets.UTF_8).length);
                 }
-            }
-            else if ("GET".equals(request.getMethod()))
-            {
+            } else if ("GET".equals(request.getMethod())) {
                 String rangeHeader = request.getHeader("Range");
-                if (rangeHeader == null)
-                {
+                if (rangeHeader == null) {
                     byte[] bytes = content.getBytes(StandardCharsets.UTF_8);
                     mockResponse.setBody(new Buffer().write(bytes));
                     mockResponse.addHeader(CONTENT_LENGTH, bytes.length);
-                }
-                 else
-                 {
+                } else {
                     handlePartialDownload(rangeHeader, mockResponse);
                 }
             }
@@ -154,29 +161,29 @@ public class FakeCdn implements BeforeAllCallback, AfterAllCallback {
             return mockResponse;
         }
 
-    private void handlePartialDownload(String rangeHeader, MockResponse mockResponse) {
+        private void handlePartialDownload(String rangeHeader, MockResponse mockResponse) {
 
-        Range downloadRange = Range.parseOne(rangeHeader);
+            Range downloadRange = Range.parseOne(rangeHeader);
 
-        byte[] bytes = content.getBytes(StandardCharsets.UTF_8);
+            byte[] bytes = content.getBytes(StandardCharsets.UTF_8);
 
-        int from = downloadRange.start;
-        // Handle open-ended ranges (e.g., "bytes=10-") by setting 'to' to the end of the content
-        int to = (downloadRange.end == Integer.MAX_VALUE) ? bytes.length : downloadRange.end + 1;
+            int from = downloadRange.start;
+            // Handle open-ended ranges (e.g., "bytes=10-") by setting 'to' to the end of the content
+            int to = (downloadRange.end == Integer.MAX_VALUE) ? bytes.length : downloadRange.end + 1;
 
-        // Validate range
-        if (from >= bytes.length || from < 0) {
-            mockResponse.setResponseCode(416); // Range Not Satisfiable
-        } else {
-            // Clamp 'to' to the actual content length
-            to = Math.min(to, bytes.length);
-            
-            Buffer buffer = new Buffer().write(Arrays.copyOfRange(bytes, from, to));
-            mockResponse.setResponseCode(206);
-            mockResponse.setBody(buffer);
-            mockResponse.setHeader(CONTENT_LENGTH, to - from);
+            // Validate range
+            if (from >= bytes.length || from < 0) {
+                mockResponse.setResponseCode(416); // Range Not Satisfiable
+            } else {
+                // Clamp 'to' to the actual content length
+                to = Math.min(to, bytes.length);
+
+                Buffer buffer = new Buffer().write(Arrays.copyOfRange(bytes, from, to));
+                mockResponse.setResponseCode(206);
+                mockResponse.setBody(buffer);
+                mockResponse.setHeader(CONTENT_LENGTH, to - from);
+            }
         }
-    }
     }
 
     private record Range(int start, int end) {

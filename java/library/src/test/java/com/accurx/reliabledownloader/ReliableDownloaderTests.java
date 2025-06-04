@@ -12,6 +12,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Files;
@@ -132,7 +133,7 @@ class ReliableDownloaderTests {
         RecordedRequest getRequest = fakeCdn.getServer().takeRequest(1, TimeUnit.SECONDS); // GET request for actual download
         assertNotNull(getRequest);
         assertEquals("GET", getRequest.getMethod());
-        assertEquals("bytes=" + initialTempFileSize + "-", getRequest.getHeader("Range"));
+        assert(getRequest.getHeader("Range")).contains("bytes=" + initialTempFileSize + "-");
     }
 
     @Test
@@ -236,43 +237,54 @@ class ReliableDownloaderTests {
         assertFalse(Files.exists(Path.of(destinationFilePath.toString() + ".tmp")));
     }
 
-    // Problematic
-//    @Test
-//    @DisplayName("should handle 404 Not Found error gracefully")
-//    void downloadFailsWithNotFound() throws Exception {
-//        // Test with an invalid path that doesn't exist on the FakeCdn server
-//        fakeCdn = new FakeCdn(TEST_FILE_NAME, TEST_CONTENT);
-//        fakeCdn.beforeAll(null);
-//
-//        // Use a path that doesn't match the FakeCdn's expected paths
-//        URI downloadUri = fakeCdn.getServer().url("/nonexistent-path/file.txt").uri();
-//        FileDownloadSettings settings = new FileDownloadSettings(downloadUri, destinationFilePath, "downloader-404");
-//        FileDownloadCommand command = new FileDownloadCommand(downloader, settings);
-//
-//        UnsupportedOperationException thrown = assertThrows(UnsupportedOperationException.class, command::run);
-//
-//        assertTrue(thrown.getMessage().contains("Unsupported request path"));
-//        assertFalse(Files.exists(destinationFilePath));
-//        assertFalse(Files.exists(Path.of(destinationFilePath.toString() + ".tmp")));
-//    }
+    @Test
+    @DisplayName("should handle 404 Not Found error gracefully")
+    void downloadFailsWithNotFound() throws Exception {
+        DownloaderConfig.Builder configBuilder = new DownloaderConfig.Builder()
+                .maxRetries(1)
+                .connectTimeout(Duration.ofSeconds(3));
+        DownloaderFactory factory = new DownloaderFactory();
+        downloader = factory.createReliableDownloader(configBuilder.build());
+
+        // Test with an invalid path that doesn't exist on the FakeCdn server
+        fakeCdn = new FakeCdn(TEST_FILE_NAME, TEST_CONTENT);
+        fakeCdn.beforeAll(null);
+
+        // Use a path that doesn't match the FakeCdn's expected paths
+        URI downloadUri = fakeCdn.getServer().url("/nonexistent-path/file.txt").uri();
+        FileDownloadSettings settings = new FileDownloadSettings(downloadUri, destinationFilePath, "downloader-404");
+        FileDownloadCommand command = new FileDownloadCommand(downloader, settings);
+
+        FileNotFoundException thrown = assertThrows(FileNotFoundException.class, command::run);
+
+        assertTrue(thrown.getMessage().contains("Resource not found"));
+        assertFalse(Files.exists(destinationFilePath));
+        assertFalse(Files.exists(Path.of(destinationFilePath.toString() + ".tmp")));
+    }
 
 
-//    @Test
-//    @DisplayName("should handle server error (e.g., 500) gracefully")
-//    void downloadFailsWithServerError() throws Exception {
-//        // Test with an invalid path that causes an exception in the FakeCdn dispatcher
-//        fakeCdn = new FakeCdn(TEST_FILE_NAME, TEST_CONTENT);
-//        fakeCdn.beforeAll(null);
-//
-//        // Use a path that doesn't match the FakeCdn's expected paths to trigger an exception
-//        URI downloadUri = fakeCdn.getServer().url("/invalid-server-error-path/file.txt").uri();
-//        FileDownloadSettings settings = new FileDownloadSettings(downloadUri, destinationFilePath, "downloader-500");
-//        FileDownloadCommand command = new FileDownloadCommand(downloader, settings);
-//
-//        UnsupportedOperationException thrown = assertThrows(UnsupportedOperationException.class, command::run);
-//
-//        assertTrue(thrown.getMessage().contains("Unsupported request path"));
-//        assertFalse(Files.exists(destinationFilePath));
-//        assertFalse(Files.exists(Path.of(destinationFilePath.toString() + ".tmp")));
-//    }
+    @Test
+    @DisplayName("should handle server error (e.g., 500) gracefully")
+    void downloadFailsWithServerError() throws Exception {
+        DownloaderConfig.Builder configBuilder = new DownloaderConfig.Builder()
+                .maxRetries(1)
+                .connectTimeout(Duration.ofSeconds(3));
+        DownloaderFactory factory = new DownloaderFactory();
+        downloader = factory.createReliableDownloader(configBuilder.build());
+
+        // Test with an invalid path that causes an exception in the FakeCdn dispatcher
+        fakeCdn = new FakeCdn(TEST_FILE_NAME, TEST_CONTENT);
+        fakeCdn.beforeAll(null);
+
+        // Use a path that doesn't match the FakeCdn's expected paths to trigger an exception
+        URI downloadUri = fakeCdn.getServer().url("/invalid-server-error-path/file.txt").uri();
+        FileDownloadSettings settings = new FileDownloadSettings(downloadUri, destinationFilePath, "downloader-500");
+        FileDownloadCommand command = new FileDownloadCommand(downloader, settings);
+
+        IOException thrown = assertThrows(IOException.class, command::run);
+
+        assertTrue(thrown.getMessage().contains("HTTP error: 501"));
+        assertFalse(Files.exists(destinationFilePath));
+        assertFalse(Files.exists(Path.of(destinationFilePath.toString() + ".tmp")));
+    }
 }

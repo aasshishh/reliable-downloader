@@ -5,12 +5,12 @@ import java.time.Duration;
 public class DownloaderConfig {
     // For handling UNRELIABLE AND SLOW Network conditions
     private static final int DEFAULT_CHUNK_SIZE = 8 * 1024; // 5KB
-    private static final int DEFAULT_MAX_RETRIES = 10;
+    private static final int DEFAULT_MAX_RETRIES = 5;
     // Give the network a brief moment to recover. It increases exponentially with each retry.
-    private static final Duration DEFAULT_RETRY_DELAY = Duration.ofSeconds(5);
+    private static final Duration DEFAULT_RETRY_DELAY = Duration.ofSeconds(3);
     private static final int DEFAULT_BUFFER_SIZE = 8192; // 8KB
-    private static final Duration DEFAULT_CONNECT_TIMEOUT = Duration.ofMinutes(5);
-    private static final Duration DEFAULT_READ_TIMEOUT = Duration.ofMinutes(60);
+    private static final Duration DEFAULT_CONNECT_TIMEOUT = Duration.ofMinutes(1);
+    private static final Duration DEFAULT_READ_TIMEOUT = Duration.ofMinutes(5);
 
     private final int chunkSize;
     private final int maxRetries;

@@ -58,6 +58,9 @@ public class ReliableDownloader extends AbstractDownloader implements FileDownlo
 
     @Override
     public Optional<String> performDownload(URI contentFileUrl, OutputStream destination, long startOffset) throws Exception {
+        HttpURLConnection connection = null;
+        Optional<String> downloadedDataMd5 = Optional.empty();
+
         long totalSize = -1; // Overall total size
         boolean supportsRangeRequests = false;
         long currentDownloadedBytes = startOffset; // Initialize with startOffset for resuming
@@ -87,8 +90,16 @@ public class ReliableDownloader extends AbstractDownloader implements FileDownlo
                 LOGGER.info("File already fully downloaded. Skipping download process.");
             }
 
-            ByteArrayOutputStream md5Buffer = new ByteArrayOutputStream();
-            MultiOutputStream multiDestination = new MultiOutputStream(destination, md5Buffer);
+            ByteArrayOutputStream md5Buffer = null;
+            if (startOffset == 0 && config.isVerifyHash()) {
+                md5Buffer = new ByteArrayOutputStream();
+            }
+            OutputStream finalDestination;
+            if (md5Buffer != null) {
+                finalDestination = new MultiOutputStream(destination, md5Buffer);
+            } else {
+                finalDestination = destination;
+            }
 
             // Notify initial progress with the existing downloaded bytes
             notifyProgress(currentDownloadedBytes, totalSize);
@@ -97,7 +108,7 @@ public class ReliableDownloader extends AbstractDownloader implements FileDownlo
             // Loop until all bytes are downloaded
             while (currentDownloadedBytes < totalSize) {
                 // Pass the current offset and get the bytes downloaded in this chunk
-                long bytesInThisChunk = downloadChunk(contentFileUrl, multiDestination,
+                long bytesInThisChunk = downloadChunk(contentFileUrl, finalDestination,
                         currentDownloadedBytes, totalSize, supportsRangeRequests);
 
                 // Add the bytes downloaded in this chunk to the cumulative total
@@ -108,7 +119,7 @@ public class ReliableDownloader extends AbstractDownloader implements FileDownlo
             }
 
             // Step 3: Verify hash if configured
-            if (config.isVerifyHash()) {
+            if (config.isVerifyHash() && md5Buffer != null) {
                 String contentMd5 = calculateMd5(md5Buffer.toByteArray());
                 return Optional.of(contentMd5);
             }
@@ -274,7 +285,6 @@ public class ReliableDownloader extends AbstractDownloader implements FileDownlo
                 } else if (responseCode == HttpURLConnection.HTTP_PARTIAL && !supportsRangeRequests) {
                     LOGGER.warn("Received partial content without requesting range for {}", contentFileUrl);
                 } else if (responseCode == HttpURLConnection.HTTP_OK && supportsRangeRequests && currentOffset > 0) {
-                    // Server returned 200 OK even though we requested a range. This means it ignored the Range header.
                     LOGGER.warn("Server ignored Range header and returned full content (HTTP 200 OK) for {}. " +
                             "Starting download from the beginning of the stream.", contentFileUrl);
                 } else if (responseCode != HttpURLConnection.HTTP_OK && responseCode != HttpURLConnection.HTTP_PARTIAL) {
