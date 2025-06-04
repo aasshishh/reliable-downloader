@@ -39,7 +39,7 @@ public abstract class AbstractDownloader implements FileDownloader {
         } catch (Exception e) { // Catch any other unexpected exceptions
             LOGGER.error("An unexpected error occurred during download", e);
             notifyError(new IOException("Unexpected error during download", e));
-            throw new IOException("Unexpected error during download", e);
+            throw e;
         } finally {
             afterDownload();
         }

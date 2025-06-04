@@ -3,6 +3,7 @@ package com.accurx.reliabledownloader.impl;
 import com.accurx.reliabledownloader.core.AbstractDownloader;
 import com.accurx.reliabledownloader.core.DownloaderConfig;
 import com.accurx.reliabledownloader.core.FileDownloader;
+import com.accurx.reliabledownloader.core.RangeNotSupportedException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -66,9 +67,16 @@ public class ReliableDownloader extends AbstractDownloader implements FileDownlo
 
             // If the server doesn't support range requests, we must start from 0 regardless of startOffset
             if (!supportsRangeRequests && startOffset > 0) {
-                LOGGER.warn("Server does not support range requests. Full file will be re-downloaded from offset 0.");
-                currentDownloadedBytes = 0; // Effectively restart if range is not supported
+                LOGGER.warn("Server does not support range requests. Full file needs to be re-downloaded. " +
+                        "Throwing RangeNotSupportedException");
+                throw new RangeNotSupportedException();
             }
+        } catch (Exception e) {
+            LOGGER.error("Download Initialization failed: {}", e.getMessage());
+            throw e;
+        }
+
+        try {
 
             // If the file is already fully downloaded based on the initial check
             if (currentDownloadedBytes == totalSize && totalSize != -1) {

@@ -2,6 +2,7 @@ package com.accurx.reliabledownloader.impl;
 
 import com.accurx.reliabledownloader.core.AbstractDownloader;
 import com.accurx.reliabledownloader.core.FileDownloader;
+import com.accurx.reliabledownloader.core.RangeNotSupportedException;
 import com.accurx.reliabledownloader.util.DownloadProgressObserver;
 
 import java.io.IOException;
@@ -27,6 +28,8 @@ public class RetryingDownloader implements FileDownloader {
         while (attempts < maxRetries) {
             try {
                 return delegate.downloadFile(source, destination, startOffset);
+            } catch (RangeNotSupportedException e) {
+                throw e;
             } catch (IOException e) {
                 attempts++;
                 if (attempts == maxRetries) throw e;
