@@ -1,4 +1,5 @@
 # PROJECT REPORT
+## Programming Language : `[JAVA]`
 ## Objective: File Downloader Implementation
 
 This project delivers a versatile file downloader, designed to perform reliably across diverse network environments. Its core capabilities address challenges in unstable network conditions through:
@@ -141,7 +142,7 @@ After a successful build, you can run the application using the Gradle `run` tas
 
 *   `--url=<url_of_the_file_to_download>`: Specifies the URL of the file to download.
 *   `--destination=<path_of_downloaded_file>`: Sets the local path where the downloaded file will be saved.
-*   `--network=[good|poor]`: Simulates network conditions. Use `good` for optimal conditions or `poor` for throttled speeds.
+*   `--network_conditions=[good|poor]`: Simulates network conditions. Use `good` for optimal conditions or `poor` for throttled speeds.
 
 **Example Full Command:**
 
