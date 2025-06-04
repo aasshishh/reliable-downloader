@@ -26,6 +26,7 @@ public class FileDownloadCommand {
     public void run() throws Exception {
         Path destinationFilePath = downloadSettings.destinationFilePath();
         Path tempFilePath = Path.of(destinationFilePath.toString() + ".tmp");
+        long startOffset = 0;
 
         LOGGER.info(
                 "Starting download from {} to {}...",
@@ -33,18 +34,24 @@ public class FileDownloadCommand {
                 destinationFilePath.toAbsolutePath()
         );
 
+        // Check for existing temporary file to resume download
+        if (Files.exists(tempFilePath)) {
+            startOffset = Files.size(tempFilePath);
+            LOGGER.info("Resuming download from offset: {} bytes for file: {}", startOffset, tempFilePath.getFileName());
+        } else {
+            LOGGER.info("No temporary file found, starting new download.");
+        }
+
         Optional<String> contentMd5Opt;
 
         try {
             // Ensure the parent directory exists for the temporary file
             Files.createDirectories(tempFilePath.getParent());
 
-            try (OutputStream outputStream =
-                         Files.newOutputStream(
-                                 tempFilePath,
-                                 StandardOpenOption.TRUNCATE_EXISTING,
-                                 StandardOpenOption.CREATE)) {
-                contentMd5Opt = fileDownloader.downloadFile(downloadSettings.sourceUrl(), outputStream);
+            // Open the output stream in append mode if resuming, otherwise truncate/create
+            StandardOpenOption openOption = startOffset > 0 ? StandardOpenOption.APPEND : StandardOpenOption.CREATE;
+            try (OutputStream outputStream = Files.newOutputStream(tempFilePath, openOption)) {
+                contentMd5Opt = fileDownloader.downloadFile(downloadSettings.sourceUrl(), outputStream, startOffset);
             }
 
             // Download successful, now verify MD5 if present

@@ -51,7 +51,7 @@ public class HTTPClientFileDownloader extends AbstractDownloader implements File
     }
 
     @Override
-    public Optional<String> performDownload(URI contentFileUrl, OutputStream destination) throws IOException {
+    public Optional<String> performDownload(URI contentFileUrl, OutputStream destination, long startOffset) throws IOException {
         try {
             var headResponse = sendHeadRequest(contentFileUrl);
             validateResponse(headResponse, "HEAD");

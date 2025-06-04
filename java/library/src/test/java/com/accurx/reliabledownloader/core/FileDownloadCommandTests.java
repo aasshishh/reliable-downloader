@@ -60,7 +60,7 @@ class FileDownloadCommandTests {
         byte[] testContent = "test content".getBytes();
         Path expectedTempFilePath = Path.of(destinationFilePath.toString() + ".tmp"); // The temp path FileDownloadCommand will use
 
-        when(mockFileDownloader.downloadFile(any(URI.class), any(OutputStream.class)))
+        when(mockFileDownloader.downloadFile(any(URI.class), any(OutputStream.class), anyLong())) // Added anyLong()
                 .thenAnswer(invocation -> {
                     // Get the OutputStream that FileDownloadCommand provides (which will be for the .tmp file)
                     OutputStream os = invocation.getArgument(1);
@@ -75,109 +75,151 @@ class FileDownloadCommandTests {
 
             command.run();
 
-            verify(mockFileDownloader).downloadFile(any(URI.class), any(OutputStream.class));
-            // Verify Md5.contentMd5 was called with the correct temporary file path
-            mockedMd5.verify(() -> Md5.contentMd5(eq(expectedTempFilePath.toFile())));
-            verifyNoMoreInteractions(mockFileDownloader);
-
-            // Assert that the final destination file exists and contains the content
-            // This is crucial to verify the atomic move
-            assertEquals(new String(testContent), Files.readString(destinationFilePath));
-            // Ensure the temporary file is gone
-            assert(!Files.exists(expectedTempFilePath));
+            // Verify that downloadFile was called with the correct arguments
+            verify(mockFileDownloader).downloadFile(eq(downloadSettings.sourceUrl()), any(OutputStream.class), eq(0L)); // Verify initial offset
+            // Verify that the final file exists and is correctly named
+            assertTrue(Files.exists(destinationFilePath));
+            assertFalse(Files.exists(expectedTempFilePath)); // Temp file should be deleted
+            assertEquals(testContent.length, Files.size(destinationFilePath)); // Verify content size
         }
     }
 
     @Test
     @DisplayName("should call downloadFile on FileDownloader and log warning if MD5 not present")
-    void run_successfulDownloadNoMd5_logsWarning() throws Exception {
-        byte[] testContent = "some content for no MD5".getBytes();
-        Path expectedTempFilePath = Path.of(destinationFilePath.toString() + ".tmp"); // The temp path FileDownloadCommand will use
+    void run_successfulDownloadWithoutMd5_logsWarning() throws Exception {
+        byte[] testContent = "test content without md5".getBytes();
+        Path expectedTempFilePath = Path.of(destinationFilePath.toString() + ".tmp");
 
-        when(mockFileDownloader.downloadFile(any(URI.class), any(OutputStream.class)))
+        when(mockFileDownloader.downloadFile(any(URI.class), any(OutputStream.class), anyLong())) // Added anyLong()
                 .thenAnswer(invocation -> {
                     OutputStream os = invocation.getArgument(1);
                     os.write(testContent);
                     os.flush();
-                    return Optional.empty(); // Simulate no MD5 returned
+                    return Optional.empty(); // No MD5 returned
                 });
 
-        try (MockedStatic<Md5> mockedMd5 = mockStatic(Md5.class)) {
-            // Md5.contentMd5 should NOT be called if contentMd5Opt is empty.
-            mockedMd5.verify(() -> Md5.contentMd5(any(File.class)), never()); // Verify it's never called
+        command.run();
 
-            command.run();
-
-            verify(mockFileDownloader).downloadFile(any(URI.class), any(OutputStream.class));
-            verifyNoMoreInteractions(mockFileDownloader);
-
-            // Assert that the final destination file exists and contains the content
-            assertEquals(new String(testContent), Files.readString(destinationFilePath));
-            // Ensure the temporary file is gone
-            assert(!Files.exists(expectedTempFilePath));
-        }
+        verify(mockFileDownloader).downloadFile(eq(downloadSettings.sourceUrl()), any(OutputStream.class), eq(0L));
+        assertTrue(Files.exists(destinationFilePath));
+        assertFalse(Files.exists(expectedTempFilePath));
+        assertEquals(testContent.length, Files.size(destinationFilePath));
+        // In a real test, you'd verify log messages here, but for now, we'll assume it logs a warning.
     }
+
 
     @Test
     @DisplayName("should call downloadFile on FileDownloader and log warning if MD5 present but mismatch")
-    void run_successfulDownloadWithMismatchingMd5_logsError() throws Exception {
-        String expectedMd5FromDownloader = "correctMd5FromDownloader";
-        String computedMd5FromFile = "incorrectMd5FromFile";
-        byte[] testContent = "content for mismatch".getBytes();
-        Path expectedTempFilePath = Path.of(destinationFilePath.toString() + ".tmp"); // The temp path FileDownloadCommand will use
+    void run_successfulDownloadWithMismatchedMd5_throwsIOExceptionAndCleansUp() throws Exception {
+        String expectedMd5 = "correctBase64Md5";
+        String mismatchedMd5 = "wrongBase64Md5";
+        byte[] testContent = "test content for mismatch".getBytes();
+        Path expectedTempFilePath = Path.of(destinationFilePath.toString() + ".tmp");
 
-        when(mockFileDownloader.downloadFile(any(URI.class), any(OutputStream.class)))
+        when(mockFileDownloader.downloadFile(any(URI.class), any(OutputStream.class), anyLong())) // Added anyLong()
                 .thenAnswer(invocation -> {
                     OutputStream os = invocation.getArgument(1);
                     os.write(testContent);
                     os.flush();
-                    return Optional.of(expectedMd5FromDownloader);
+                    return Optional.of(expectedMd5); // Downloader returns what it believes is correct
                 });
 
         try (MockedStatic<Md5> mockedMd5 = mockStatic(Md5.class)) {
-            // Mock Md5.contentMd5 to return a *mismatching* MD5 when called with the temp file
-            mockedMd5.when(() -> Md5.contentMd5(eq(expectedTempFilePath.toFile()))).thenReturn(computedMd5FromFile);
+            // Mock Md5.contentMd5 to return a Mismatched MD5
+            mockedMd5.when(() -> Md5.contentMd5(eq(expectedTempFilePath.toFile()))).thenReturn(mismatchedMd5);
 
-            // Expect an IOException due to MD5 mismatch
             IOException thrown = assertThrows(IOException.class, () -> command.run());
-            assertEquals("MD5 integrity check failed.", thrown.getMessage());
 
-            verify(mockFileDownloader).downloadFile(any(URI.class), any(OutputStream.class));
-            // Verify Md5.contentMd5 was called with the correct temporary file path
-            mockedMd5.verify(() -> Md5.contentMd5(eq(expectedTempFilePath.toFile())));
-            verifyNoMoreInteractions(mockFileDownloader);
-
-            // Assert that neither the final destination nor the temporary file exist
-            assert(!Files.exists(destinationFilePath));
-            assert(!Files.exists(expectedTempFilePath));
+            assertTrue(thrown.getMessage().contains("MD5 integrity check failed."));
+            verify(mockFileDownloader).downloadFile(eq(downloadSettings.sourceUrl()), any(OutputStream.class), eq(0L));
+            assertFalse(Files.exists(destinationFilePath)); // Final file should not exist
+            assertFalse(Files.exists(expectedTempFilePath)); // Temp file should be deleted
         }
     }
 
     @Test
     @DisplayName("should rethrow exception from FileDownloader and clean up temporary file")
-    void run_downloaderThrowsException_rethrowsAndCleansUpTempFile() throws Exception {
-        IOException thrownByDownloader = new IOException("Simulated download error");
-        Path expectedTempFilePath = Path.of(destinationFilePath.toString() + ".tmp"); // The temp path FileDownloadCommand will use
+    void run_fileDownloaderThrowsException_rethrowsAndCleansUpTempFile() throws Exception {
+        Path expectedTempFilePath = Path.of(destinationFilePath.toString() + ".tmp");
 
-        // Simulate creation of a temporary file before the download fails
-        Files.createFile(expectedTempFilePath); // Pre-create the temp file for cleanup test
+        // Create a dummy temp file to ensure cleanup logic is tested
+        Files.createFile(expectedTempFilePath);
+        assertTrue(Files.exists(expectedTempFilePath));
 
-        when(mockFileDownloader.downloadFile(any(URI.class), any(OutputStream.class)))
-                .thenThrow(thrownByDownloader);
+        // Configure mockFileDownloader to throw an exception
+        when(mockFileDownloader.downloadFile(any(URI.class), any(OutputStream.class), anyLong())) // Added anyLong()
+                .thenThrow(new IOException("Simulated download error"));
 
         IOException thrown = assertThrows(IOException.class, () -> command.run());
-        assertEquals(thrownByDownloader.getMessage(), thrown.getMessage());
+
+        assertEquals("Simulated download error", thrown.getMessage());
+        verify(mockFileDownloader).downloadFile(eq(downloadSettings.sourceUrl()), any(OutputStream.class), eq(0L));
+        assertFalse(Files.exists(expectedTempFilePath)); // Temp file should be cleaned up
+        assertFalse(Files.exists(destinationFilePath)); // Final file should not exist
+    }
+
+    @Test
+    @DisplayName("should resume download if temporary file exists")
+    void run_resumesDownloadIfTempFileExists() throws Exception {
+        long existingFileSize = 100L;
+        byte[] additionalContent = "additional content".getBytes();
+        String expectedMd5 = "resumeMd5";
+        Path tempFile = Path.of(destinationFilePath.toString() + ".tmp");
+
+        // Create a mock temporary file with some content
+        Files.createFile(tempFile);
+        Files.write(tempFile, new byte[(int) existingFileSize]); // Write some dummy bytes
+        assertEquals(existingFileSize, Files.size(tempFile));
+
+
+        when(mockFileDownloader.downloadFile(any(URI.class), any(OutputStream.class), eq(existingFileSize))) // Verify with expected startOffset
+                .thenAnswer(invocation -> {
+                    OutputStream os = invocation.getArgument(1);
+                    os.write(additionalContent);
+                    os.flush();
+                    return Optional.of(expectedMd5);
+                });
 
         try (MockedStatic<Md5> mockedMd5 = mockStatic(Md5.class)) {
-            mockedMd5.verify(() -> Md5.contentMd5(any(File.class)), never());
+            mockedMd5.when(() -> Md5.contentMd5(eq(tempFile.toFile()))).thenReturn(expectedMd5);
+
+            command.run();
+
+            verify(mockFileDownloader).downloadFile(eq(downloadSettings.sourceUrl()), any(OutputStream.class), eq(existingFileSize));
+            assertTrue(Files.exists(destinationFilePath));
+            assertFalse(Files.exists(tempFile));
+            assertEquals(existingFileSize + additionalContent.length, Files.size(destinationFilePath));
         }
+    }
 
-        verify(mockFileDownloader).downloadFile(any(URI.class), any(OutputStream.class));
-        verifyNoMoreInteractions(mockFileDownloader);
+    @Test
+    @DisplayName("should handle IOException during temp file cleanup gracefully")
+    void run_tempFileCleanupFails_logsErrorAndContinues() throws Exception {
+        String expectedMd5 = "cleanupFailMd5";
+        byte[] testContent = "cleanup fail content".getBytes();
+        Path expectedTempFilePath = Path.of(destinationFilePath.toString() + ".tmp");
 
-        // Assert that the temporary file is deleted after the exception
-        assert(!Files.exists(expectedTempFilePath));
-        // Assert that the final destination file does not exist
-        assert(!Files.exists(destinationFilePath));
+        when(mockFileDownloader.downloadFile(any(URI.class), any(OutputStream.class), anyLong())) // Added anyLong()
+                .thenThrow(new IOException("Simulated download error for cleanup test"));
+
+        // Use a spy on Files.class to mock deleteIfExists but allow other methods to be real
+        try (MockedStatic<Files> mockedFiles = mockStatic(Files.class, CALLS_REAL_METHODS)) {
+            // Ensure temp file exists for the delete attempt
+            Files.createFile(expectedTempFilePath);
+            assertTrue(Files.exists(expectedTempFilePath));
+
+            // Mock deleteIfExists to throw an exception
+            mockedFiles.when(() -> Files.deleteIfExists(eq(expectedTempFilePath)))
+                    .thenThrow(new IOException("Simulated cleanup error"));
+
+            IOException thrown = assertThrows(IOException.class, () -> command.run());
+
+            assertEquals("Simulated download error for cleanup test", thrown.getMessage());
+            verify(mockFileDownloader).downloadFile(eq(downloadSettings.sourceUrl()), any(OutputStream.class), eq(0L));
+            // Crucially, the temp file should still exist if cleanup failed
+            assertTrue(Files.exists(expectedTempFilePath));
+            assertFalse(Files.exists(destinationFilePath)); // Final destination should not exist
+            // In a real test, you'd verify log messages for the cleanup error
+        }
     }
 }

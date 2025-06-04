@@ -18,13 +18,14 @@ public abstract class AbstractDownloader implements FileDownloader {
     protected abstract void beforeDownload();
     protected abstract void afterDownload();
 
-    protected abstract Optional<String> performDownload(URI source, OutputStream destination) throws Exception;
+    // Updated to include startOffset
+    protected abstract Optional<String> performDownload(URI source, OutputStream destination, long startOffset) throws Exception;
 
     @Override
-    public final Optional<String> downloadFile(URI source, OutputStream destination) throws Exception {
+    public final Optional<String> downloadFile(URI source, OutputStream destination, long startOffset) throws Exception {
         beforeDownload();
         try {
-            Optional<String> result = performDownload(source, destination);
+            Optional<String> result = performDownload(source, destination, startOffset);
             notifyComplete();
             return result;
         } catch (IOException e) {
@@ -78,5 +79,4 @@ public abstract class AbstractDownloader implements FileDownloader {
             }
         });
     }
-
 }

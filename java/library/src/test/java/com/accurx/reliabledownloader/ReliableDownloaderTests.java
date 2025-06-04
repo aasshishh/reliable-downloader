@@ -26,7 +26,8 @@ class ReliableDownloaderTests {
         assertThrows(Exception.class, () -> {
             URI invalidUri = URI.create("invalid-url");
             try (FileOutputStream outputStream = new FileOutputStream(tempDir.resolve("test.file").toFile())) {
-                downloader.downloadFile(invalidUri, outputStream);
+                // Added 0 for the startOffset parameter
+                downloader.downloadFile(invalidUri, outputStream, 0);
             }
         });
     }
@@ -47,7 +48,8 @@ class ReliableDownloaderTests {
 
         IOException thrown = assertThrows(IOException.class, () -> {
             try (FileOutputStream outputStream = new FileOutputStream(tempDir.resolve("test.file").toFile())) {
-                downloader.downloadFile(nonExistentUri, outputStream);
+                // Added 0 for the startOffset parameter
+                downloader.downloadFile(nonExistentUri, outputStream, 0);
             }
         });
 
@@ -63,4 +65,3 @@ class ReliableDownloaderTests {
                 thrown.getMessage().contains("connect failed"));
     }
 }
-

@@ -22,11 +22,11 @@ public class RetryingDownloader implements FileDownloader {
     }
 
     @Override
-    public Optional<String> downloadFile(URI source, OutputStream destination) throws Exception {
+    public Optional<String> downloadFile(URI source, OutputStream destination, long startOffset) throws Exception {
         int attempts = 0;
         while (attempts < maxRetries) {
             try {
-                return delegate.downloadFile(source, destination);
+                return delegate.downloadFile(source, destination, startOffset);
             } catch (IOException e) {
                 attempts++;
                 if (attempts == maxRetries) throw e;
@@ -54,3 +54,4 @@ public class RetryingDownloader implements FileDownloader {
         delegate.addObserver(observer);
     }
 }
+

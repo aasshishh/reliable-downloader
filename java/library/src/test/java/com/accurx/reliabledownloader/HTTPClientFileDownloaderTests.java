@@ -78,7 +78,7 @@ class HTTPClientFileDownloaderTests {
         when(mockGetResponse.body()).thenReturn(new ByteArrayInputStream(fileContent.getBytes()));
 
         ByteArrayOutputStream destination = new ByteArrayOutputStream();
-        spyDownloader.downloadFile(testUri, destination); // Call downloadFile, which calls beforeDownload/afterDownload
+        spyDownloader.downloadFile(testUri, destination, 0); // Call downloadFile, which calls beforeDownload/afterDownload
 
         // Since beforeDownload and afterDownload are protected, we verify the overall behavior
         // that downloadFile was successful (which means hooks were called)
@@ -112,7 +112,7 @@ class HTTPClientFileDownloaderTests {
         when(mockGetResponse.body()).thenReturn(new ByteArrayInputStream(fileContent.getBytes()));
 
         ByteArrayOutputStream destination = new ByteArrayOutputStream();
-        Optional<String> actualMd5 = spyDownloader.performDownload(testUri, destination); // Use spyDownloader
+        Optional<String> actualMd5 = spyDownloader.performDownload(testUri, destination, 0); // Use spyDownloader
 
         assertTrue(actualMd5.isPresent());
         assertEquals(expectedMd5, actualMd5.get());
@@ -149,7 +149,7 @@ class HTTPClientFileDownloaderTests {
         when(mockGetResponse.body()).thenReturn(new ByteArrayInputStream(fileContent.getBytes()));
 
         ByteArrayOutputStream destination = new ByteArrayOutputStream();
-        spyDownloader.performDownload(testUri, destination); // Use spyDownloader
+        spyDownloader.performDownload(testUri, destination, 0); // Use spyDownloader
 
         // No explicit assert for range support as it's internal logging,
         // but we've tested the path where it's not supported.
@@ -167,7 +167,7 @@ class HTTPClientFileDownloaderTests {
         ByteArrayOutputStream destination = new ByteArrayOutputStream();
 
         // Expect an IOException due to the 500 status code
-        IOException thrown = assertThrows(IOException.class, () -> spyDownloader.performDownload(testUri, destination));
+        IOException thrown = assertThrows(IOException.class, () -> spyDownloader.performDownload(testUri, destination, 0));
         assertTrue(thrown.getMessage().contains("HEAD request failed with status code: 500"));
 
         // performDownload() doesn't notify observers directly, that's done in downloadFile()
@@ -196,7 +196,7 @@ class HTTPClientFileDownloaderTests {
         ByteArrayOutputStream destination = new ByteArrayOutputStream();
 
         // Expect an IOException due to the 500 status code
-        IOException thrown = assertThrows(IOException.class, () -> spyDownloader.performDownload(testUri, destination));
+        IOException thrown = assertThrows(IOException.class, () -> spyDownloader.performDownload(testUri, destination, 0));
         assertTrue(thrown.getMessage().contains("GET request failed with status code: 500"));
 
         // performDownload() doesn't notify observers directly, that's done in downloadFile()
@@ -216,7 +216,7 @@ class HTTPClientFileDownloaderTests {
 
         ByteArrayOutputStream destination = new ByteArrayOutputStream();
 
-        IOException thrown = assertThrows(IOException.class, () -> spyDownloader.performDownload(testUri, destination));
+        IOException thrown = assertThrows(IOException.class, () -> spyDownloader.performDownload(testUri, destination, 0));
         assertTrue(thrown.getMessage().contains("Download interrupted"));
         assertTrue(thrown.getCause() instanceof InterruptedException);
 

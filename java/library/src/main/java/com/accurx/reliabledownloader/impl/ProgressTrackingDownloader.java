@@ -21,12 +21,12 @@ public class ProgressTrackingDownloader implements FileDownloader, DownloadProgr
     }
 
     @Override
-    public Optional<String> downloadFile(URI source, OutputStream destination) throws Exception {
+    public Optional<String> downloadFile(URI source, OutputStream destination, long startOffset) throws Exception {
         // The initial 0% update is good for immediate feedback
-        externalProgressObserver.onProgressUpdate(0, 100);
+        externalProgressObserver.onProgressUpdate(startOffset, 100); // Pass startOffset as initial downloaded bytes
 
         try {
-            Optional<String> result = delegate.downloadFile(source, destination);
+            Optional<String> result = delegate.downloadFile(source, destination, startOffset);
             // The final 100% update ensures completion is always shown
             externalProgressObserver.onProgressUpdate(100, 100);
             externalProgressObserver.onComplete();
