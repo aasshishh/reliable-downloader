@@ -37,12 +37,6 @@ public class CommandLineSettingsParser { // Renamed to illustrate example, use y
                     logger.warn("Invalid argument format: '{}'. Expected --key=value.", arg);
                 }
             } else {
-                // If it's not a key-value pair, assume it's positional (URL or Destination)
-                // This makes parsing more complex. A more robust solution might require a dedicated library
-                // or strict ordering for positional args, but for simplicity, let's assume
-                // the first non-key-value is URL, second is destination.
-                // This approach is less flexible than pure key-value for all args.
-                // For a more robust solution, consider a library like picocli, JCommander, or Apache Commons CLI.
                 if (!parsedArgs.containsKey("url")) {
                     parsedArgs.put("url", arg);
                 } else if (!parsedArgs.containsKey("destination")) {

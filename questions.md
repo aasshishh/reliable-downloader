@@ -7,14 +7,14 @@ Initially, as a developer with a background primarily in C++, I focused on setti
 
 Throughout the development process, AI tools, particularly IntelliJ's integrated AI Chat functionality, were extensively utilized to overcome development hurdles. The following prompts illustrate how these tools facilitated progress:
 
-1.  "As a C++ developer, assist me in setting up a Java project from scratch."
-2.  "Provide guidance on resolving build errors and Java version incompatibility issues."
-3.  "Generate more comprehensive test cases for this class."
-4.  "Propose enhancements for the `ReliableDownloader` class, such as 'Robustness and Error Handling in `initializeDownload`' and 'State Management for Resume' capabilities."
-5.  "Explain the functionality of `fakeCdn` and its application in developing more robust `ReliableDownloaderTests`."
-6.  "Describe how to test a Java binary for slow and poor network conditions when downloading a file from the internet on a Windows environment."
-   *Answer* : Use tools like NetLimiter
-7.  "Assist in generating a project report."
+* "As a C++ developer, assist me in setting up a Java project from scratch."
+* "Provide guidance on resolving build errors and Java version incompatibility issues."
+* "Generate more comprehensive test cases for this class."
+* "Propose enhancements for the `ReliableDownloader` class, such as 'Robustness and Error Handling in `initializeDownload`' and 'State Management for Resume' capabilities."
+* "Explain the functionality of `fakeCdn` and its application in developing more robust `ReliableDownloaderTests`."
+* "Describe how to test a Java binary for slow and poor network conditions when downloading a file from the internet on a Windows environment."
+   `Answer : Use tools like NetLimiter`
+* Docuementation help : "Assist in generating a project report." / "Rewrite this paragraph"
 
 
 Areas where AI was not utilized:
@@ -45,14 +45,14 @@ The server component would expose a comprehensive set of APIs to facilitate remo
 Beyond the architectural shift to a server-based model, several critical enhancements can be made to the current implementation to significantly improve its resilience and overall performance. These areas include:
 
 *   **Optimized Multi-threaded Downloading:** To maximize download speed and efficiency, the system would be enhanced to support simultaneous connections for concurrent downloading of different file segments. This optimization would involve:
-   *   **Sophisticated Thread Pool Management:** Implementing an intelligent thread pool to efficiently manage and allocate resources for multiple download streams.
-   *   **Leveraging HTTP Byte Range Requests:** Utilizing the HTTP `Range` header to precisely request and retrieve specific portions of a file, enabling parallel downloads.
-   *   **Dynamic Concurrency Adjustment:** Developing logic to dynamically adapt the number of concurrent connections based on real-time network conditions and server responsiveness, ensuring optimal performance without overburdening resources.
+    *  **Sophisticated Thread Pool Management:** Implementing an intelligent thread pool to efficiently manage and allocate resources for multiple download streams.
+    *   **Leveraging HTTP Byte Range Requests:** Utilizing the HTTP `Range` header to precisely request and retrieve specific portions of a file, enabling parallel downloads.
+    *   **Dynamic Concurrency Adjustment:** Developing logic to dynamically adapt the number of concurrent connections based on real-time network conditions and server responsiveness, ensuring optimal performance without overburdening resources.
 
 *   **Advanced Bandwidth Management and Prioritization:** To provide users with greater control and ensure efficient network utilization, features for bandwidth throttling and download prioritization would be integrated:
-   *   **Granular Rate Limiting Implementation:** Introducing mechanisms to precisely control and limit the data transfer rate per second, preventing network saturation.
-   *   **Intelligent Queueing and Prioritization Logic:** Establishing a robust system for managing download queues and assigning priorities, ensuring that critical downloads are completed expeditiously.
+    *   **Granular Rate Limiting Implementation:** Introducing mechanisms to precisely control and limit the data transfer rate per second, preventing network saturation.
+    *   **Intelligent Queueing and Prioritization Logic:** Establishing a robust system for managing download queues and assigning priorities, ensuring that critical downloads are completed expeditiously.
 
 *   **Real-time Checksum Verification during Download:** To enhance data integrity and detect corruption proactively, checksum verification would be performed throughout the download process, rather than solely post-completion:
-   *   **Stream-based Hashing:** Implementing a continuous hashing mechanism to calculate checksums for incoming data chunks as they are received.
-   *   **Incremental Verification against Provided Hashes:** If the server offers checksums for individual file segments, these would be incrementally verified against the calculated hashes during the download, providing early detection of any data inconsistencies.
+       *   **Stream-based Hashing:** Implementing a continuous hashing mechanism to calculate checksums for incoming data chunks as they are received.
+       *   **Incremental Verification against Provided Hashes:** If the server offers checksums for individual file segments, these would be incrementally verified against the calculated hashes during the download, providing early detection of any data inconsistencies.

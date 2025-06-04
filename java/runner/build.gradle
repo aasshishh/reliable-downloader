@@ -1,4 +1,5 @@
 plugins {
+    id 'java'
     id 'application'
 }
 
@@ -20,4 +21,10 @@ java {
 application {
     // Define the main class for the application.
     mainClass = 'com.accurx.reliabledownloader.runner.Program'
+}
+
+run {
+    if (project.hasProperty("appArgs")) {
+        args appArgs.split(' ')
+    }
 }

@@ -8,6 +8,8 @@ This project delivers a versatile file downloader, designed to perform reliably 
   *   Efficient chunked downloading for improved throughput and resilience.
   *   Automatic resume functionality for interrupted transfers.
   *   Configurable retry mechanisms to overcome transient network issues.
+
+
 *   **Data Integrity & User Experience:**
   *   Post-download hash verification to guarantee file integrity.
   *   Real-time progress tracking.
@@ -144,7 +146,7 @@ After a successful build, you can run the application using the Gradle `run` tas
 **Example Full Command:**
 
 ```bash
-./gradlew run --url=https://installer.accurx.com/chain/4.22.50587.0/accuRx.Installer.Local.msi --destination=./downloads/myfirstdownload.msi --network=poor
+.\gradlew run -PappArgs="--url=https://installer.accurx.com/chain/4.22.50587.0/accuRx.Installer.Local.msi --destination=./downloads/myfirstdownload.msi --network_conditions=poor"
 ```
 
 ## Default Configurations for Robustness on Slow Networks

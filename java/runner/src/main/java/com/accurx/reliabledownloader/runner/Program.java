@@ -49,11 +49,12 @@ public class Program {
         try {
             CommandLineSettingsParser parser = new CommandLineSettingsParser(DEFAULT_SETTINGS);
             FileDownloadSettings settings = parser.parse(args);
+            DownloaderConfig config = createDownloaderConfig(settings);
 
             logger.info("Starting download from: {}", settings.sourceUrl());
             logger.info("Destination: {}", settings.destinationFilePath());
+            logger.info("Config : {}", config.toString());
 
-            DownloaderConfig config = createDownloaderConfig(settings);
             DownloaderFactory factory = new DownloaderFactory();
             // Create downloader based on config & settings
             FileDownloader downloader = factory.createDownloader(config, settings);
