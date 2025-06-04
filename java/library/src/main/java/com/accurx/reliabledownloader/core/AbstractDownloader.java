@@ -25,24 +25,24 @@ public abstract class AbstractDownloader implements FileDownloader {
         beforeDownload();
         try {
             Optional<String> result = performDownload(source, destination);
-            notifyComplete(); // Notify completion only on successful download
+            notifyComplete();
             return result;
-        } catch (IOException e) { // Catch specific IOExceptions
-            notifyError(e); // Notify observers about the error
-            throw e; // Re-throw the exception so callers know it failed
-        } catch (InterruptedException e) { // Catch InterruptedException specifically
-            Thread.currentThread().interrupt(); // Restore the interrupted status
+        } catch (IOException e) {
+            // Notify observers about the error
+            notifyError(e);
+            throw e;
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
             notifyError(new IOException("Download interrupted", e));
-            throw new IOException("Download interrupted", e); // Re-throw as IOException
+            throw new IOException("Download interrupted", e);
         } catch (Exception e) { // Catch any other unexpected exceptions
             LOGGER.error("An unexpected error occurred during download", e);
             notifyError(new IOException("Unexpected error during download", e));
-            throw new IOException("Unexpected error during download", e); // Re-throw
+            throw new IOException("Unexpected error during download", e);
         } finally {
             afterDownload();
         }
     }
-
 
     public void addObserver(DownloadProgressObserver observer) {
         observers.add(observer);

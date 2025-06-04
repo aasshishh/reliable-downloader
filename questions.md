@@ -4,7 +4,8 @@
 1. First Question I asked was following after cloning the project. `For context, I am coming from Cpp background. Help me setup this project and run it.`
 2. Can you help me fix build errors ?
 3. Can you help me write more comprehensive tests for each class ?
-
+4. Let's go deep into ReliableDownloader. What else we can /should do in order to improve the solution ?
+- Help me with suggestions like "Robustness and Error Handling in initializeDownload" and "State Management for Resume"
 ## How did you verify your solution works correctly?
 
 ## How long did you spend on the exercise?

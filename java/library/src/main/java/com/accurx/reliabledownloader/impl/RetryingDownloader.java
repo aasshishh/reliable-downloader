@@ -1,6 +1,8 @@
 package com.accurx.reliabledownloader.impl;
 
+import com.accurx.reliabledownloader.core.AbstractDownloader;
 import com.accurx.reliabledownloader.core.FileDownloader;
+import com.accurx.reliabledownloader.util.DownloadProgressObserver;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -44,5 +46,11 @@ public class RetryingDownloader implements FileDownloader {
         long baseDelay = retryDelay.toMillis();
         // Exponential backoff: baseDelay * 2^(attempts - 1)
         return baseDelay * (long) Math.pow(2, attempts - 1);
+    }
+
+    @Override
+    public void addObserver(DownloadProgressObserver observer) {
+        // Delegate the observer addition to the wrapped FileDownloader
+        delegate.addObserver(observer);
     }
 }

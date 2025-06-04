@@ -6,7 +6,6 @@ import java.nio.file.Path;
 public class FileDownloadSettingsBuilder {
     private URI sourceUrl;
     private Path destinationPath = Path.of("./downloads/");
-    // private String downloader = "HTTPDownloader";
     private String downloader = "ReliableDownloader";
 
     public FileDownloadSettingsBuilder withSource(URI url) {

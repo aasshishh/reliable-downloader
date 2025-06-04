@@ -1,9 +1,6 @@
 package com.accurx.reliabledownloader.core;
 
-import com.accurx.reliabledownloader.impl.HTTPClientFileDownloader;
-import com.accurx.reliabledownloader.impl.ProgressTrackingDownloader;
-import com.accurx.reliabledownloader.impl.ReliableDownloader;
-import com.accurx.reliabledownloader.impl.RetryingDownloader;
+import com.accurx.reliabledownloader.impl.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -25,16 +22,17 @@ public class DownloaderFactory {
 
     public FileDownloader createHTTPClientFileDownloader(DownloaderConfig config) {
         FileDownloader base = new HTTPClientFileDownloader(
-                (Supplier<HttpClient>) HttpClient.newBuilder()
+                () -> HttpClient.newBuilder()
                         .connectTimeout(config.getConnectTimeout())
                         .build());
 
+        // Generally meant for Reliable Downloader, but can be used for other purposes as well.
         if (config.isResumeSupport()) {
             base = new RetryingDownloader(base, config.getMaxRetries(), config.getRetryDelay());
         }
 
         if (config.isProgressTrackingEnabled()) {
-            base = new ProgressTrackingDownloader(base);
+            base = new ProgressTrackingDownloader(base, new ConsoleProgressObserver());
         }
 
         return base;
@@ -43,12 +41,11 @@ public class DownloaderFactory {
     public FileDownloader createReliableDownloader(DownloaderConfig config) {
         FileDownloader base = new ReliableDownloader(config);
 
-        if (config.isResumeSupport()) {
-            base = new RetryingDownloader(base, config.getMaxRetries(), config.getRetryDelay());
-        }
+        // Always retry on HTTP client errors, regardless of config settings.
+        base = new RetryingDownloader(base, config.getMaxRetries(), config.getRetryDelay());
 
         if (config.isProgressTrackingEnabled()) {
-            base = new ProgressTrackingDownloader(base);
+            base = new ProgressTrackingDownloader(base, new ConsoleProgressObserver());
         }
 
         return base;

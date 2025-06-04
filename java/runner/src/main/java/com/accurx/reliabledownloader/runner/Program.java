@@ -2,6 +2,7 @@ package com.accurx.reliabledownloader.runner;
 
 import com.accurx.reliabledownloader.core.*;
 import com.accurx.reliabledownloader.impl.ConsoleProgressObserver;
+import com.accurx.reliabledownloader.impl.HTTPClientFileDownloader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -14,7 +15,8 @@ public class Program {
 
     private static final FileDownloadSettings DEFAULT_SETTINGS = new FileDownloadSettings(
             URI.create("https://installer.accurx.com/chain/4.22.50587.0/accuRx.Installer.Local.msi"),
-            Path.of("./downloads/msiInstance.msi"),
+            Path.of("./downloads/myfirstdownload.msi"),
+            // "HTTPClientFileDownloader"
             "ReliableDownloader"
     );
 
@@ -27,9 +29,7 @@ public class Program {
             logger.info("Destination: {}", settings.destinationFilePath());
 
             // Create config
-            DownloaderConfig.Builder configBuilder = new DownloaderConfig.Builder()
-                    .maxRetries(3)
-                    .connectTimeout(Duration.ofMinutes(5));
+            DownloaderConfig.Builder configBuilder = new DownloaderConfig.Builder();
 
             DownloaderFactory factory = new DownloaderFactory();
             // Create downloader based on config & settings
@@ -39,7 +39,6 @@ public class Program {
                    downloader,
                     settings
             );
-            command.addObserver(new ConsoleProgressObserver());
 
             command.run();
 

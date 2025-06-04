@@ -1,5 +1,7 @@
 package com.accurx.reliabledownloader.core;
 
+import com.accurx.reliabledownloader.util.DownloadProgressObserver;
+
 import java.io.OutputStream;
 import java.net.URI;
 import java.util.Optional;
@@ -13,4 +15,6 @@ public interface FileDownloader
      * @return the MD5 checksum if present (b64 encoded)
      */
     Optional<String> downloadFile(URI contentFileUrl, OutputStream destination) throws Exception;
+
+    default void addObserver(DownloadProgressObserver observer) {}
 }
