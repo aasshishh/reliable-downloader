@@ -42,8 +42,10 @@ public class FakeCdn implements BeforeAllCallback, AfterAllCallback {
         this.acceptRangesPath = "/accept-ranges/" + fileName;
         this.noAcceptRangesPath = "/no-accept-ranges/" + fileName;
         this.content = content;
+        // Hash the content as bytes to match how Md5.contentMd5() computes the hash from files
+        byte[] contentBytes = content.getBytes(StandardCharsets.UTF_8);
         this.contentHash = BaseEncoding.base64().encode(
-                Hashing.md5().hashUnencodedChars(content).asBytes()
+                Hashing.md5().hashBytes(contentBytes).asBytes()
         );
         this.server = new MockWebServer();
         this.server.setDispatcher(new CndDispatcher());
@@ -66,6 +68,10 @@ public class FakeCdn implements BeforeAllCallback, AfterAllCallback {
     public String getContentHash()
     {
         return contentHash;
+    }
+
+    public MockWebServer getServer() {
+        return server;
     }
 
     @Override
@@ -101,14 +107,40 @@ public class FakeCdn implements BeforeAllCallback, AfterAllCallback {
 
             if ("HEAD".equals(request.getMethod()))
             {
-                mockResponse.addHeader(CONTENT_LENGTH, content.getBytes(StandardCharsets.UTF_8));
+                String rangeHeader = request.getHeader("Range");
+                if (rangeHeader != null && acceptRangesPath.equals(request.getPath())) {
+                    // Handle HEAD request with Range header for resume consistency check
+                    Range downloadRange = Range.parseOne(rangeHeader);
+                    byte[] bytes = content.getBytes(StandardCharsets.UTF_8);
+                    
+                    int from = downloadRange.start;
+                    // Validate range for HEAD request
+                    if (from >= bytes.length || from < 0) {
+                        mockResponse.setResponseCode(416); // Range Not Satisfiable
+                        return mockResponse;
+                    } else {
+                        // For HEAD with valid range, return 206 with appropriate Content-Length
+                        int to = (downloadRange.end == Integer.MAX_VALUE) ? bytes.length : Math.min(downloadRange.end + 1, bytes.length);
+                        mockResponse.setResponseCode(206);
+                        mockResponse.addHeader(CONTENT_LENGTH, to - from);
+                        mockResponse.addHeader("Content-Range", "bytes " + from + "-" + (to - 1) + "/" + bytes.length);
+                    }
+                } else if (rangeHeader != null && noAcceptRangesPath.equals(request.getPath())) {
+                    // Server that doesn't accept ranges should ignore Range header and return 200 OK
+                    mockResponse.addHeader(CONTENT_LENGTH, content.getBytes(StandardCharsets.UTF_8).length);
+                } else {
+                    // Normal HEAD request without Range header
+                    mockResponse.addHeader(CONTENT_LENGTH, content.getBytes(StandardCharsets.UTF_8).length);
+                }
             }
             else if ("GET".equals(request.getMethod()))
             {
                 String rangeHeader = request.getHeader("Range");
                 if (rangeHeader == null)
                 {
-                    mockResponse.setBody(content);
+                    byte[] bytes = content.getBytes(StandardCharsets.UTF_8);
+                    mockResponse.setBody(new Buffer().write(bytes));
+                    mockResponse.addHeader(CONTENT_LENGTH, bytes.length);
                 }
                  else
                  {
@@ -122,41 +154,56 @@ public class FakeCdn implements BeforeAllCallback, AfterAllCallback {
             return mockResponse;
         }
 
-        private void handlePartialDownload(String rangeHeader, MockResponse mockResponse) {
+    private void handlePartialDownload(String rangeHeader, MockResponse mockResponse) {
 
-            Range downloadRange = Range.parseOne(rangeHeader);
+        Range downloadRange = Range.parseOne(rangeHeader);
 
-            byte[] bytes = content.getBytes(StandardCharsets.UTF_8);
+        byte[] bytes = content.getBytes(StandardCharsets.UTF_8);
 
-            int from = downloadRange.start;
-            int to = downloadRange.end + 1;
+        int from = downloadRange.start;
+        // Handle open-ended ranges (e.g., "bytes=10-") by setting 'to' to the end of the content
+        int to = (downloadRange.end == Integer.MAX_VALUE) ? bytes.length : downloadRange.end + 1;
 
-            if (to > bytes.length)
-            {
-                mockResponse.setResponseCode(416);
-            }
-            else
-            {
-                Buffer buffer = new Buffer().write(Arrays.copyOfRange(bytes, from, to));
-                mockResponse.setResponseCode(206);
-                mockResponse.setBody(buffer);
-                mockResponse.setHeader(CONTENT_LENGTH, to - from);
-            }
+        // Validate range
+        if (from >= bytes.length || from < 0) {
+            mockResponse.setResponseCode(416); // Range Not Satisfiable
+        } else {
+            // Clamp 'to' to the actual content length
+            to = Math.min(to, bytes.length);
+            
+            Buffer buffer = new Buffer().write(Arrays.copyOfRange(bytes, from, to));
+            mockResponse.setResponseCode(206);
+            mockResponse.setBody(buffer);
+            mockResponse.setHeader(CONTENT_LENGTH, to - from);
         }
+    }
     }
 
     private record Range(int start, int end) {
 
-        private static final Pattern rangeHeaderMatcher = Pattern.compile("^bytes=(?<from>\\d+)-(?<to>\\d+)$");
+        private static final Pattern rangeWithEndMatcher = Pattern.compile("^bytes=(?<from>\\d+)-(?<to>\\d+)$");
+        private static final Pattern rangeWithoutEndMatcher = Pattern.compile("^bytes=(?<from>\\d+)-$");
 
-        public static Range parseOne(String rangeHeader)
-        {
-            Matcher matcher = rangeHeaderMatcher.matcher(rangeHeader);
-            if (!matcher.matches())
-            {
-                throw new UnsupportedOperationException("Unsupported range header " + rangeHeader);
+        public static Range parseOne(String rangeHeader) {
+            // Try pattern with both start and end bytes first (e.g., "bytes=10-20")
+            Matcher matcherWithEnd = rangeWithEndMatcher.matcher(rangeHeader);
+            if (matcherWithEnd.matches()) {
+                return new Range(
+                    Integer.parseInt(matcherWithEnd.group("from")), 
+                    Integer.parseInt(matcherWithEnd.group("to"))
+                );
             }
-            return new Range(Integer.parseInt(matcher.group("from")), Integer.parseInt(matcher.group("to")));
+            
+            // Try pattern with only start byte (e.g., "bytes=10-")
+            Matcher matcherWithoutEnd = rangeWithoutEndMatcher.matcher(rangeHeader);
+            if (matcherWithoutEnd.matches()) {
+                int from = Integer.parseInt(matcherWithoutEnd.group("from"));
+                // For ranges without end, use a large number to indicate "to end of file"
+                // This will be handled properly in handlePartialDownload method
+                return new Range(from, Integer.MAX_VALUE);
+            }
+            
+            throw new UnsupportedOperationException("Unsupported range header " + rangeHeader);
         }
     }
 }

@@ -7,7 +7,11 @@ import com.accurx.reliabledownloader.core.RangeNotSupportedException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.*;
+import java.io.ByteArrayOutputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URI;
 import java.security.MessageDigest;
@@ -117,148 +121,125 @@ public class ReliableDownloader extends AbstractDownloader implements FileDownlo
     }
 
     private DownloadInitializationResult initializeDownload(URI contentFileUrl, long currentOffset) throws IOException {
-        int currentRetry = 0;
-        IOException lastException = null;
-        while (currentRetry <= config.getMaxRetries()) {
-            HttpURLConnection conn = null;
-            try {
+        HttpURLConnection conn = null;
+        try {
+            conn = (HttpURLConnection) contentFileUrl.toURL().openConnection();
+            conn.setConnectTimeout((int) config.getConnectTimeout().toMillis());
+            conn.setReadTimeout((int) config.getReadTimeout().toMillis());
+            conn.setRequestMethod("HEAD");
+
+            // If resuming, send a Range header even for the HEAD request to check consistency
+            if (config.isResumeSupport() && currentOffset > 0) {
+                conn.setRequestProperty("Range", "bytes=" + currentOffset + "-");
+                LOGGER.debug("Sending HEAD request with Range header: bytes={}-", currentOffset);
+            }
+
+            conn.connect();
+
+            int responseCode = conn.getResponseCode();
+            // Handle 416 specifically for HEAD requests if range was requested but not satisfiable
+            if (responseCode == 416 && currentOffset > 0) {
+                LOGGER.warn("Server returned 416 (Range Not Satisfiable) for HEAD request. " +
+                        "This might mean the local partial file is larger than the remote file, " +
+                        "or the file has changed. Restarting download from 0.");
+                currentOffset = 0; // Reset offset, force full download
+                // Re-try HEAD request without Range header to get correct total size
+                conn.disconnect(); // Disconnect current connection
                 conn = (HttpURLConnection) contentFileUrl.toURL().openConnection();
                 conn.setConnectTimeout((int) config.getConnectTimeout().toMillis());
                 conn.setReadTimeout((int) config.getReadTimeout().toMillis());
                 conn.setRequestMethod("HEAD");
-
-                // If resuming, send a Range header even for the HEAD request to check consistency
-                if (config.isResumeSupport() && currentOffset > 0) {
-                    conn.setRequestProperty("Range", "bytes=" + currentOffset + "-");
-                    LOGGER.debug("Sending HEAD request with Range header: bytes={}-", currentOffset);
-                }
-
                 conn.connect();
+                responseCode = conn.getResponseCode(); // Get new response code
+            }
 
-                int responseCode = conn.getResponseCode();
-                // Handle 416 specifically for HEAD requests if range was requested but not satisfiable
-                if (responseCode == 416 && currentOffset > 0) {
-                    LOGGER.warn("Server returned 416 (Range Not Satisfiable) for HEAD request. " +
-                            "This might mean the local partial file is larger than the remote file, " +
-                            "or the file has changed. Restarting download from 0.");
-                    currentOffset = 0; // Reset offset, force full download
-                    // Re-try HEAD request without Range header to get correct total size
-                    conn.disconnect(); // Disconnect current connection
-                    conn = (HttpURLConnection) contentFileUrl.toURL().openConnection();
-                    conn.setConnectTimeout((int) config.getConnectTimeout().toMillis());
-                    conn.setReadTimeout((int) config.getReadTimeout().toMillis());
-                    conn.setRequestMethod("HEAD");
-                    conn.connect();
-                    responseCode = conn.getResponseCode(); // Get new response code
+            if (responseCode >= HttpURLConnection.HTTP_BAD_REQUEST) {
+                String responseMessage = conn.getResponseMessage();
+                if (responseCode == HttpURLConnection.HTTP_NOT_FOUND) {
+                    throw new FileNotFoundException("Resource not found: " + contentFileUrl);
+                } else if (responseCode == HttpURLConnection.HTTP_FORBIDDEN) {
+                    throw new SecurityException("Access forbidden: " + contentFileUrl);
+                } else {
+                    throw new IOException("HTTP error: " + responseCode + " " + responseMessage + " for " + contentFileUrl);
                 }
+            }
 
-                if (responseCode >= HttpURLConnection.HTTP_BAD_REQUEST) {
-                    String responseMessage = conn.getResponseMessage();
-                    if (responseCode == HttpURLConnection.HTTP_NOT_FOUND) {
-                        throw new FileNotFoundException("Resource not found: " + contentFileUrl);
-                    } else if (responseCode == HttpURLConnection.HTTP_FORBIDDEN) {
-                        throw new SecurityException("Access forbidden: " + contentFileUrl);
-                    } else {
-                        throw new IOException("HTTP error: " + responseCode + " " + responseMessage + " for " + contentFileUrl);
+            String acceptRanges = conn.getHeaderField("Accept-Ranges");
+            // Resume support is only true if config enables it AND server advertises it
+            boolean supportsRangeRequests = config.isResumeSupport() &&
+                    acceptRanges != null &&
+                    acceptRanges.equals("bytes");
+
+            long totalSize = conn.getContentLengthLong();
+
+            String contentRangeHeader = conn.getHeaderField("Content-Range");
+            if (contentRangeHeader != null) {
+                try {
+                    // Example: bytes 0-100/200 -> total size is 200
+                    int slashIndex = contentRangeHeader.indexOf('/');
+                    if (slashIndex != -1) {
+                        totalSize = Long.parseLong(contentRangeHeader.substring(slashIndex + 1));
                     }
+                } catch (NumberFormatException e) {
+                    LOGGER.warn("Could not parse Content-Range header for total size: {}", contentRangeHeader);
                 }
-
-                String acceptRanges = conn.getHeaderField("Accept-Ranges");
-                // Resume support is only true if config enables it AND server advertises it
-                boolean supportsRangeRequests = config.isResumeSupport() &&
-                        acceptRanges != null &&
-                        acceptRanges.equals("bytes");
-
-                long totalSize = conn.getContentLengthLong();
-
-                // If Content-Length from HEAD is -1, it means the server doesn't provide it,
-                // or if we sent a Range header, it might be the length of the requested range.
-                // For proper total size, we need to look at Content-Range header.
-                String contentRangeHeader = conn.getHeaderField("Content-Range");
-                if (contentRangeHeader != null) {
-                    try {
-                        // Example: bytes 0-100/200 -> total size is 200
-                        int slashIndex = contentRangeHeader.indexOf('/');
-                        if (slashIndex != -1) {
-                            totalSize = Long.parseLong(contentRangeHeader.substring(slashIndex + 1));
-                        }
-                    } catch (NumberFormatException e) {
-                        LOGGER.warn("Could not parse Content-Range header for total size: {}", contentRangeHeader);
-                    }
-                }
+            }
 
 
-                if (totalSize == -1) {
-                    // Fallback: if HEAD request doesn't provide total size, try a small GET request
-                    // to see if we can get it from Content-Length or Content-Range.
-                    // This is less efficient but necessary for some servers.
-                    LOGGER.warn("Could not determine total file size from HEAD request for {}. Attempting partial GET.", contentFileUrl);
-                    HttpURLConnection getConn = null; // Corrected: new connection for GET
-                    try {
-                        getConn = (HttpURLConnection) contentFileUrl.toURL().openConnection();
-                        getConn.setConnectTimeout((int) config.getConnectTimeout().toMillis());
-                        getConn.setReadTimeout((int) config.getReadTimeout().toMillis());
-                        getConn.setRequestMethod("GET");
-                        // Request a small range to avoid downloading the whole file
-                        getConn.setRequestProperty("Range", "bytes=0-0"); // Request just 1 byte
-                        getConn.connect();
+            if (totalSize == -1) {
+                LOGGER.warn("Could not determine total file size from HEAD request for {}. Attempting partial GET.", contentFileUrl);
+                HttpURLConnection getConn = null; // Corrected: new connection for GET
+                try {
+                    getConn = (HttpURLConnection) contentFileUrl.toURL().openConnection();
+                    getConn.setConnectTimeout((int) config.getConnectTimeout().toMillis());
+                    getConn.setReadTimeout((int) config.getReadTimeout().toMillis());
+                    getConn.setRequestMethod("GET");
+                    // Request a small range to avoid downloading the whole file
+                    getConn.setRequestProperty("Range", "bytes=0-0"); // Request just 1 byte
+                    getConn.connect();
 
-                        if (getConn.getResponseCode() == HttpURLConnection.HTTP_PARTIAL || getConn.getResponseCode() == HttpURLConnection.HTTP_OK) {
-                            long potentialTotal = getConn.getContentLengthLong();
-                            if (potentialTotal != -1) {
-                                // If we got a partial content length, it's just for the 1 byte, so not useful here.
-                                // We need the Content-Range header for total size.
-                                String getResponseContentRange = getConn.getHeaderField("Content-Range");
-                                if (getResponseContentRange != null) {
-                                    int slashIndex = getResponseContentRange.indexOf('/');
-                                    if (slashIndex != -1) {
-                                        totalSize = Long.parseLong(getResponseContentRange.substring(slashIndex + 1));
-                                    }
+                    if (getConn.getResponseCode() == HttpURLConnection.HTTP_PARTIAL || getConn.getResponseCode() == HttpURLConnection.HTTP_OK) {
+                        long potentialTotal = getConn.getContentLengthLong();
+                        if (potentialTotal != -1) {
+                            // If we got a partial content length, it's just for the 1 byte, so not useful here.
+                            // We need the Content-Range header for total size.
+                            String getResponseContentRange = getConn.getHeaderField("Content-Range");
+                            if (getResponseContentRange != null) {
+                                int slashIndex = getResponseContentRange.indexOf('/');
+                                if (slashIndex != -1) {
+                                    totalSize = Long.parseLong(getResponseContentRange.substring(slashIndex + 1));
                                 }
                             }
                         }
-                    } catch (Exception ex) {
-                        LOGGER.warn("Failed to get total size from partial GET: {}", ex.getMessage());
-                    } finally {
-                        if (getConn != null) {
-                            getConn.disconnect();
-                        }
                     }
-                    if (totalSize == -1) {
-                        throw new IOException("Could not determine file size for " + contentFileUrl);
+                } catch (Exception ex) {
+                    LOGGER.warn("Failed to get total size from partial GET: {}", ex.getMessage());
+                } finally {
+                    if (getConn != null) {
+                        getConn.disconnect();
                     }
                 }
-
-                // If resuming, check if the currentOffset is valid against the total size
-                if (config.isResumeSupport() && currentOffset > 0) {
-                    if (currentOffset > totalSize) {
-                        LOGGER.warn("Local partial file size ({}) is greater than remote total size ({}). Restarting download from 0.", currentOffset, totalSize);
-                        currentOffset = 0; // Force restart if local file is larger than remote
-                    }
-                }
-
-
-                LOGGER.info("Download size: {} bytes, Resume support: {}", totalSize, supportsRangeRequests);
-                return new DownloadInitializationResult(totalSize, supportsRangeRequests);
-            } catch (IOException e) {
-                lastException = e;
-                LOGGER.warn("Failed to initialize download for {}. Retrying {}/{}: {}",
-                        contentFileUrl, currentRetry + 1, config.getMaxRetries(), e.getMessage());
-                try {
-                    Thread.sleep(config.getRetryDelay().toMillis());
-                } catch (InterruptedException ie) {
-                    Thread.currentThread().interrupt();
-                    throw new IOException("Initialization interrupted during retry delay.", ie);
-                }
-                currentRetry++;
-            } finally {
-                if (conn != null) {
-                    conn.disconnect();
+                if (totalSize == -1) {
+                    throw new IOException("Could not determine file size for " + contentFileUrl);
                 }
             }
+
+            // If resuming, check if the currentOffset is valid against the total size
+            if (config.isResumeSupport() && currentOffset > 0) {
+                if (currentOffset > totalSize) {
+                    LOGGER.warn("Local partial file size ({}) is greater than remote total size ({}). Restarting download from 0.", currentOffset, totalSize);
+                    currentOffset = 0; // Force restart if local file is larger than remote
+                }
+            }
+
+
+            LOGGER.info("Download size: {} bytes, Resume support: {}", totalSize, supportsRangeRequests);
+            return new DownloadInitializationResult(totalSize, supportsRangeRequests);
+        } finally {
+            if (conn != null) {
+                conn.disconnect();
+            }
         }
-        // If we reach here, all retries failed
-        throw new IOException("Failed to initialize download after " + config.getMaxRetries() + " retries.", lastException);
     }
 
     private long downloadChunk(URI contentFileUrl, OutputStream destination,
@@ -277,7 +258,6 @@ public class ReliableDownloader extends AbstractDownloader implements FileDownlo
                 LOGGER.debug("Downloading chunk: {} to {}", currentOffset, endByte);
             } else {
                 // If not supporting range requests, ensure we always start from 0.
-                // The FileDownloadCommand should have truncated the file or this should be the first chunk.
                 if (currentOffset > 0) {
                     LOGGER.warn("Server does not support range requests, but an offset was requested. " +
                             "This chunk download will likely start from the beginning of the file.");
@@ -297,9 +277,6 @@ public class ReliableDownloader extends AbstractDownloader implements FileDownlo
                     // Server returned 200 OK even though we requested a range. This means it ignored the Range header.
                     LOGGER.warn("Server ignored Range header and returned full content (HTTP 200 OK) for {}. " +
                             "Starting download from the beginning of the stream.", contentFileUrl);
-                    // This implies the FileDownloadCommand should have truncated the file, but we'll still write from the start of this stream.
-                    // The progress tracking will be adjusted, but the actual file content might be off if not handled correctly upstream.
-                    // For now, we proceed to write the received data.
                 } else if (responseCode != HttpURLConnection.HTTP_OK && responseCode != HttpURLConnection.HTTP_PARTIAL) {
                     throw new IOException(
                             "HTTP error during chunk download: " + responseCode + " " + responseMessage + " for " + contentFileUrl);
